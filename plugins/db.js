@@ -31,7 +31,7 @@ export default fp(async (fastify) => {
         const hashedPassword = crypto
           .pbkdf2Sync(password, user.salt, 1000, 64, 'sha512')
           .toString('hex');
-        return user.password === hashedPassword;
+        return crypto.timingSafeEqual(user.password, hashedPassword);
       },
       getUserByUsername: async (username) => {
         const { rows } = await client.query(
