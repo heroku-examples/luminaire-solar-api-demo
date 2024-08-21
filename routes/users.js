@@ -118,7 +118,7 @@ export default async function (fastify, _opts) {
     },
     async function (request, reply) {
       const { name, last_name, email, username, password } = request.body;
-      const user = fastify.db.createUser({
+      const user = await fastify.db.createUser({
         name,
         last_name,
         email,
