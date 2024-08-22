@@ -36,7 +36,7 @@ export default async function (fastify, _opts) {
     method: 'GET',
     url: '/systems',
     schema: {
-      security: [{ cookieAuth: [] }],
+      security: [{ BearerAuth: [] }],
       description: 'Get all systems',
       tags: ['systems'],
       response: {
@@ -51,91 +51,89 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    preHandler: fastify.auth([fastify.verifySession]),
+    preHandler: fastify.auth([fastify.verifyJwt]),
     handler: async function (request, reply) {
-      const user = request.session.user;
+      const user = request.user.user;
       const systems = await fastify.db.getSystemsByUser(user.id);
       reply.send(systems);
     },
   });
 
-  fastify.get(
-    '/metrics/:systemId',
-    {
-      schema: {
-        description: 'Get metrics for a system',
-        tags: ['metrics'],
-        params: {
-          type: 'object',
-          description: 'The system ID',
-          properties: {
-            systemId: { type: 'string' },
-          },
+  fastify.get('/metrics/:systemId', {
+    schema: {
+      security: [{ BearerAuth: [] }],
+      description: 'Get metrics for a system',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
         },
-        querystring: {
-          description: 'Filter metrics by date',
-          type: 'object',
-          properties: {
-            date: { type: 'string', format: 'date' },
-          },
-          required: ['date'],
+      },
+      querystring: {
+        description: 'Filter metrics by date',
+        type: 'object',
+        properties: {
+          date: { type: 'string', format: 'date' },
         },
-        response: {
-          200: {
-            description: 'Metrics for the system',
-            type: 'array',
-            items: { $ref: 'metric#' },
-          },
-          500: {
-            description: 'Internal Server Error',
-            $ref: 'error#',
-          },
+        required: ['date'],
+      },
+      response: {
+        200: {
+          description: 'Metrics for the system',
+          type: 'array',
+          items: { $ref: 'metric#' },
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
         },
       },
     },
-    async function (request, reply) {
+    preHandler: fastify.auth([fastify.verifyJwt]),
+    handler: async function (request, reply) {
       const { date } = request.query;
       const { systemId } = request.params;
 
       const metrics = await fastify.db.getMetricsBySystem(systemId, date);
       reply.send(metrics);
-    }
-  );
+    },
+  });
 
-  fastify.get(
-    '/summary/:systemId',
-    {
-      schema: {
-        description: 'Get summary for a system',
-        tags: ['metrics'],
-        params: {
-          type: 'object',
-          description: 'The system ID',
-          properties: {
-            systemId: { type: 'string' },
-          },
+  fastify.get('/summary/:systemId', {
+    schema: {
+      security: [{ BearerAuth: [] }],
+      description: 'Get summary for a system',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
         },
-        querystring: {
-          description: 'Filter metrics by date',
-          type: 'object',
-          properties: {
-            date: { type: 'string', format: 'date' },
-          },
+      },
+      querystring: {
+        description: 'Filter metrics by date',
+        type: 'object',
+        properties: {
+          date: { type: 'string', format: 'date' },
         },
-        response: {
-          200: {
-            description: 'Summary for the system',
-            type: 'object',
-            $ref: 'allSummary#',
-          },
-          500: {
-            description: 'Internal Server Error',
-            $ref: 'error#',
-          },
+      },
+      response: {
+        200: {
+          description: 'Summary for the system',
+          type: 'object',
+          $ref: 'allSummary#',
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
         },
       },
     },
-    async function (request, reply) {
+    preHandler: fastify.auth([fastify.verifyJwt]),
+    handler: async function (request, reply) {
       const { systemId } = request.params;
       const date = request.query.date || new Date().toISOString();
 
@@ -144,6 +142,6 @@ export default async function (fastify, _opts) {
         date
       );
       reply.send(summary);
-    }
-  );
+    },
+  });
 }

@@ -35,9 +35,7 @@ export default async function (fastify, _opts) {
           description: 'Authentication response',
           type: 'object',
           properties: {
-            authenticated: { type: 'boolean' },
-            sessionId: { type: 'string' },
-            user: { $ref: 'user#' },
+            authorization: { type: 'string' },
           },
         },
       },
@@ -45,52 +43,9 @@ export default async function (fastify, _opts) {
     handler: async function (request, reply) {
       const { username } = request.body;
       const user = await fastify.db.getUserByUsername(username);
-      request.session.user = user;
+      const authorization = await reply.jwtSign({ user });
       reply.send({
-        user,
-        authenticated: true,
-        sessionId: request.session.sessionId,
-      });
-    },
-  });
-
-  fastify.route({
-    method: 'GET',
-    url: '/user/logout',
-    preHandler: fastify.auth([fastify.verifySession]),
-    schema: {
-      security: [{ cookieAuth: [] }],
-      description: 'Logout an user',
-      tags: ['users'],
-      response: {
-        401: {
-          description: 'Unauthorized',
-          $ref: 'error#',
-        },
-        500: {
-          description: 'Internal Server Error',
-          $ref: 'error#',
-        },
-        200: {
-          description: 'Logout response',
-          type: 'object',
-          properties: {
-            authenticated: { type: 'boolean' },
-          },
-        },
-      },
-    },
-    handler: async function (request, reply) {
-      request.session.user = null;
-      request.session.destroy((err) => {
-        if (err) {
-          reply.status(500).send({
-            statusCode: 500,
-            error: 'Internal Server Error',
-            message: err.message,
-          });
-        }
-        reply.send({ authenticated: false });
+        authorization,
       });
     },
   });
@@ -128,29 +83,4 @@ export default async function (fastify, _opts) {
       return reply.send(user);
     }
   );
-
-  fastify.route({
-    method: 'GET',
-    url: '/user/profile',
-    preHandler: fastify.auth([fastify.verifySession]),
-    schema: {
-      security: [{ cookieAuth: [] }],
-      description: 'Get user profile',
-      tags: ['users'],
-      response: {
-        401: {
-          description: 'Unauthorized',
-          $ref: 'error#',
-        },
-        200: {
-          type: 'object',
-          description: 'User profile',
-          $ref: 'user#',
-        },
-      },
-    },
-    handler: async function (request, reply) {
-      reply.send(request.session.user);
-    },
-  });
 }

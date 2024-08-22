@@ -1,11 +1,9 @@
 import 'dotenv/config';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import Fastify from 'fastify';
+import FastifyJwt from '@fastify/jwt';
 import FastifyCors from '@fastify/cors';
 import FastifyAuth from '@fastify/auth';
-import FastifyCookie from '@fastify/cookie';
-import FastifySession from '@fastify/session';
 import FastifyPostgres from '@fastify/postgres';
 import FastifyFormBody from '@fastify/formbody';
 import AutoLoad from '@fastify/autoload';
@@ -33,15 +31,6 @@ export async function build(opts = {}) {
       callback(null, corsOptions);
     };
   });
-  fastify.register(FastifyCookie);
-  fastify.register(FastifySession, {
-    cookieName: 'SESSIONID',
-    secret: crypto.randomBytes(32).toString('hex'),
-    cookie: {
-      secure: false,
-    },
-    expires: 60 * 60 * 1000,
-  });
 
   fastify.register(Swagger, {
     openapi: {
@@ -52,10 +41,12 @@ export async function build(opts = {}) {
       },
       components: {
         securitySchemes: {
-          cookieAuth: {
-            type: 'apiKey',
-            in: 'cookie',
-            name: 'SESSIONID',
+          BearerAuth: {
+            description:
+              'RSA256 JWT signed by secret key, with user in payload',
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
           },
         },
       },
@@ -93,6 +84,10 @@ export async function build(opts = {}) {
     dir: path.join(import.meta.dirname, 'plugins'),
   });
 
+  fastify.register(FastifyJwt, {
+    secret: process.env.JWT_SECRET || 'supersecret',
+  });
+
   fastify
     .decorate('verifyUserAndPassword', async function (request, _reply) {
       const { username, password } = request.body;
@@ -101,9 +96,11 @@ export async function build(opts = {}) {
         throw new Error('Invalid credentials');
       }
     })
-    .decorate('verifySession', async function (request, _reply) {
-      if (!request.session || !request.session.user) {
-        throw new Error('User not logged in');
+    .decorate('verifyJwt', async function (request, reply) {
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        reply.send(err);
       }
     })
     .register(FastifyAuth)
