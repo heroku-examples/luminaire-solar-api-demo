@@ -126,6 +126,16 @@ export default fp(async (fastify) => {
         );
         return rows;
       },
+      getAdditionalProducts: async () => {
+        const { rows } = await client.query(
+          `SELECT name, description, 
+            productcode as "productCode", image_url__c as "imageUrl" 
+           FROM salesforce.product2
+           WHERE family in ('Home Solutions', 'Solar Panels', 'Battery Tools') AND image_url__c IS NOT NULL
+           ORDER BY name`
+        );
+        return rows;
+      },
       getProductById: async (id) => {
         const { rows } = await client.query(
           'SELECT id, name, description, image_url as "imageUrl", price FROM products WHERE id = $1',

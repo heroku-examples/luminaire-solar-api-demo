@@ -64,8 +64,9 @@ export const productSchema = {
     description: { type: 'string' },
     imageUrl: { type: 'string' },
     price: { type: 'number' },
+    productCode: { type: 'string' },
   },
-  required: ['name', 'description', 'imageUrl', 'price'],
+  required: ['name', 'description', 'imageUrl'],
 };
 
 export const errorSchema = {
