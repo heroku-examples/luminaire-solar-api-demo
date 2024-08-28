@@ -2,6 +2,7 @@ export default async function (fastify, _opts) {
   fastify.post('/webhook', async function (request, reply) {
     const payload = request.body;
     fastify.log.info(payload);
+    fastify.log.info('test');
     reply.send({ status: 'success' });
   });
 
