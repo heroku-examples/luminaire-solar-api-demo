@@ -36,6 +36,9 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 
+# Ignore package-lock
+package-lock.json
+
 # 0x
 profile-*
 
