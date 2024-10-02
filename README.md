@@ -23,7 +23,7 @@ corepack install -g pnpm@latest
 
 Install dependencies by running:
 
-> [!WARN]
+> [!WARNING]
 > Don't mix `pnpm` and `npm`, `pnpm` is more performant and have better cache
 
 ```sh
