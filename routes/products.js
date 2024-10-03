@@ -31,8 +31,8 @@ export default async function (fastify, _opts) {
       },
     },
     async (request, reply) => {
-      const additionalProducts = await fastify.db.getAdditionalProducts();
-      reply.send([...additionalProducts]);
+      const products = await fastify.db.getProducts();
+      reply.send([...products]);
     }
   );
 
