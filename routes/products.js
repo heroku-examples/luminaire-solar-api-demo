@@ -32,7 +32,16 @@ export default async function (fastify, _opts) {
     },
     async (request, reply) => {
       const products = await fastify.db.getProducts();
-      reply.send([...products]);
+      let additionalProducts = [];
+      try {
+        additionalProducts = await fastify.db.getAdditionalProducts();
+      } catch (err) {
+        fastify.log.error(
+          { error: err.message },
+          'Error getting Salesforce products'
+        );
+      }
+      reply.send([...products, ...additionalProducts]);
     }
   );
 
