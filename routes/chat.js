@@ -25,10 +25,6 @@ export default async function (fastify, _opts) {
         type: 'string',
         description: 'The message content chunk',
       },
-      error: {
-        type: 'string',
-        description: 'An error message',
-      },
     },
     required: ['role', 'content'],
   });
