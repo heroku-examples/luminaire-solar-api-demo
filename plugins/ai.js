@@ -63,10 +63,13 @@ export default fp(async (fastify) => {
           },
           {
             type: 'heroku_tool',
+<<<<<<< HEAD
             function: 'web_browsing_multi_page',
           },
           {
             type: 'heroku_tool',
+=======
+>>>>>>> 828e013 (add AI support)
             function: 'code_exec_python',
           },
         ],
