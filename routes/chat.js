@@ -60,6 +60,20 @@ export default async function (fastify, _opts) {
       try {
         const stream = await fastify.ai.executeCompletion(question);
 
+        const jsonStream = Readable.from(stream, {
+          objectMode: true,
+        });
+
+        const heartbeat = setInterval(() => {
+          jsonStream.push({
+            choices: [
+              {
+                message: { role: 'agent', content: 'Still working...' },
+              },
+            ],
+          });
+        }, 30000);
+
         const summarizeStream = new Transform({
           objectMode: true,
           transform(chunk, encoding, callback) {
@@ -85,12 +99,10 @@ export default async function (fastify, _opts) {
               callback();
             } catch (err) {
               callback(err);
+            } finally {
+              clearInterval(heartbeat);
             }
           },
-        });
-
-        const jsonStream = Readable.from(stream, {
-          objectMode: true,
         });
 
         return reply
@@ -110,6 +122,9 @@ export default async function (fastify, _opts) {
     switch (message.role) {
       case 'user':
         return 'Prompt sent.';
+
+      case 'agent':
+        return message.content;
 
       case 'assistant':
         // eslint-disable-next-line no-case-declarations
