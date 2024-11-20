@@ -105,15 +105,25 @@ export default async function (fastify, _opts) {
           },
         });
 
+        jsonStream.on('error', (err) => {
+          fastify.log.error({ err }, 'Error reading chat stream');
+          summarizeStream.destroy(err);
+          return reply.raw.write(
+            JSON.stringify({ role: 'error', content: err.message })
+          );
+        });
+
         return reply
           .type('application/x-ndjson')
           .send(jsonStream.pipe(summarizeStream));
       } catch (err) {
         fastify.log.error({ err }, 'Error executing chat completion');
-        reply.code(500).send({
-          role: 'error',
-          content: 'Error executing the chat completion, please try again',
-        });
+        reply.raw.write(
+          JSON.stringify({
+            role: 'error',
+            content: 'Error executing the chat completion, please try again',
+          })
+        );
       }
     }
   );
