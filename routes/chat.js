@@ -64,15 +64,15 @@ export default async function (fastify, _opts) {
           objectMode: true,
         });
 
-        const heartbeat = setInterval(() => {
-          jsonStream.push({
-            choices: [
-              {
-                message: { role: 'agent', content: 'Still working...' },
-              },
-            ],
-          });
-        }, 30000);
+        // const heartbeat = setInterval(() => {
+        //   jsonStream.push({
+        //     choices: [
+        //       {
+        //         message: { role: 'agent', content: 'Still working...' },
+        //       },
+        //     ],
+        //   });
+        // }, 30000);
 
         const summarizeStream = new Transform({
           objectMode: true,
@@ -100,7 +100,7 @@ export default async function (fastify, _opts) {
             } catch (err) {
               callback(err);
             } finally {
-              clearInterval(heartbeat);
+              // clearInterval(heartbeat);
             }
           },
         });
