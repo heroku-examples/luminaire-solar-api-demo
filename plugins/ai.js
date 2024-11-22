@@ -37,6 +37,7 @@ export default fp(async (fastify) => {
       If calculation questions are asked, use pandas for data manipulation but don't generate random data.
       If plotting questions are asked, use matplotlib for plotting and return the base64 encoded png image. 
       Energy units should be in kilowatt-hours (kWh).
+      Each metric record in the database represents an hour interval.
       
       Always respond in markdown format. 
       Convert newlines to <br> tags, paragraphs to <p>. 
