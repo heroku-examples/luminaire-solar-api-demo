@@ -35,8 +35,8 @@ export async function build(opts = {}) {
   fastify.register(Swagger, {
     openapi: {
       info: {
-        title: 'Lumina Solar API',
-        description: 'Provides access to the Lumina Solar API',
+        title: 'Luminaire Solar API',
+        description: 'Provides access to the Luminaire Solar API',
         version: '1.0',
       },
       components: {

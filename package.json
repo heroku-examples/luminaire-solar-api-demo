@@ -1,12 +1,11 @@
 {
-  "name": "lumina-data-cloud",
-  "description": "Lumina Solar - Data Cloud Integration",
+  "name": "luminaire-solar-ai",
+  "description": "Luminaire Solar - API",
   "type": "module",
   "version": "1.0.0",
   "main": "app.js",
   "keywords": [
     "heroku",
-    "data cloud",
     "postgres"
   ],
   "author": "Heroku DevRel <heroku-dev-advocacy@salesforce.com>",
