@@ -10,7 +10,7 @@ export default fp(async (fastify) => {
   fastify.decorate('ai', {
     executeCompletion: async (question) => {
       const PROMPT = `
-      If plotting questions are asked, use matplotlib for plotting. Upload the PNG to S3 and return the image as a pre-signed S3 URL that expires after 18 hours.
+      If plotting questions are asked, use matplotlib for plotting. Upload the PNG to S3, set the content-type as image/png, and return the image as a pre-signed S3 URL that expires after 18 hours.
 
       Always fetch the database schema before attempting to query the database.
 
@@ -18,7 +18,7 @@ export default fp(async (fastify) => {
 
       Give specific answers to the questions asked. Don't guess or provide vague answers. Keep the responses concise. Don't respond with the operations performed. Just give the answer.
 
-      Always respond in markdown format. Convert newlines to <br> tags, paragraphs to <p>. When giving numbers use <strong>, when returning code, use <code> blocks.
+      Always respond in markdown format. Convert newlines to <br> tags, paragraphs to <p>. When giving numbers use <strong>, when returning code, use <code> blocks, when returning images, use <img> tags.
 
       Make sure you install packages such as boto3 and matplotlib in the Python code execution tool before running the code.
       
