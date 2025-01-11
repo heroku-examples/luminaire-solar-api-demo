@@ -85,7 +85,11 @@ export async function build(opts = {}) {
   });
 
   fastify.register(FastifyJwt, {
-    secret: process.env.JWT_SECRET || 'supersecret',
+    secret: {
+      private: process.env.PRIVATE_KEY,
+      public: process.env.PUBLIC_KEY,
+    },
+    sign: { algorithm: 'RS256' },
   });
 
   fastify
