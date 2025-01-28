@@ -38,6 +38,7 @@
     "dotenv": "^16.4.5",
     "fastify": "^4.27.0",
     "fastify-plugin": "^4.5.1",
+    "openai": "^4.72.0",
     "pg": "^8.11.5",
     "pino": "^9.3.2",
     "pino-pretty": "^11.0.0"

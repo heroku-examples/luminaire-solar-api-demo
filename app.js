@@ -9,6 +9,7 @@ import FastifyFormBody from '@fastify/formbody';
 import AutoLoad from '@fastify/autoload';
 import Swagger from '@fastify/swagger';
 import SwaggerUI from '@fastify/swagger-ui';
+import { config } from './config.js';
 
 export async function build(opts = {}) {
   const fastify = Fastify(opts);
@@ -71,7 +72,7 @@ export async function build(opts = {}) {
   });
 
   fastify.register(FastifyPostgres, {
-    connectionString: process.env.DATABASE_URL,
+    connectionString: config.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
