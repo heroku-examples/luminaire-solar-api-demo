@@ -87,8 +87,8 @@ export async function build(opts = {}) {
 
   fastify.register(FastifyJwt, {
     secret: {
-      private: JSON.parse(process.env.PRIVATE_KEY),
-      public: JSON.parse(process.env.PUBLIC_KEY),
+      private: config.PRIVATE_KEY,
+      public: config.PUBLIC_KEY,
     },
     sign: { algorithm: 'RS256' },
   });
