@@ -4,7 +4,7 @@ import { faker } from '@faker-js/faker';
 import { getLogger } from '../lib/logger.js';
 import crypto from 'node:crypto';
 
-const SYSTEM_COUNT = 2;
+const SYSTEM_COUNT = 3;
 const METRIC_COUNT = 24 * 30; // 24 metrics per day for 30 days
 
 const logger = getLogger();
@@ -81,6 +81,11 @@ async function seed() {
         // min 75% leftover energy saved up
         produced: { min: 20, max: 25 },
         consumed: { min: 0, max: 5 },
+      },
+      {
+        // max -25% leftover energy saved up
+        produced: { min: 15, max: 20 },
+        consumed: { min: 25, max: 30 },
       },
     ];
     for (let i = 0; i < systemIds.length; i++) {
