@@ -3,6 +3,7 @@ import {
   metricSchema,
   summarySchema,
   allSummarySchema,
+  forecastSchema,
   errorSchema,
 } from '../schemas/index.js';
 
@@ -25,6 +26,11 @@ export default async function (fastify, _opts) {
   fastify.addSchema({
     $id: 'allSummary',
     ...allSummarySchema,
+  });
+
+  fastify.addSchema({
+    $id: 'forecast',
+    ...forecastSchema,
   });
 
   fastify.addSchema({
@@ -142,6 +148,38 @@ export default async function (fastify, _opts) {
         date
       );
       reply.send(summary);
+    },
+  });
+
+  fastify.get('/forecast/:systemId', {
+    schema: {
+      description: 'Get summary for a system',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          description: 'Weekly forecast for the system',
+          type: 'array',
+          items: { $ref: 'forecast#' },
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
+        },
+      },
+    },
+    handler: async function (request, reply) {
+      const { systemId } = request.params;
+      const date = request.query.date || new Date().toISOString();
+
+      const forecast = await fastify.db.getEnergyForecast(systemId, date);
+      reply.send(forecast);
     },
   });
 }

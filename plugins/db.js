@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fp from 'fastify-plugin';
+import generateEnergyForecast from '../data/mockForecast.js';
 
 export default fp(async (fastify) => {
   try {
@@ -142,6 +143,45 @@ export default fp(async (fastify) => {
           [id]
         );
         return rows[0];
+      },
+      getEnergyForecast: async (systemId, date) => {
+        // deterministic (static) forecasts based on system performance, for TDX demo script purposes
+        const startOfMonth = new Date(date);
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const endOfMonth = new Date(startOfMonth);
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        const { rows: monthlyRows } = await client.query(
+          `SELECT date_trunc('month', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+          GROUP BY date_trunc('month', datetime)
+          ORDER BY date_trunc('month', datetime) DESC`,
+          [systemId, startOfMonth, endOfMonth]
+        );
+        const energySavingsPercentage =
+          (monthlyRows[0].total_energy_produced -
+            monthlyRows[0].total_energy_consumed) /
+          monthlyRows[0].total_energy_produced;
+
+        let energyForecast;
+        // for the "happy" system, generate good outlook for energy forecast, as per script
+        if (energySavingsPercentage >= 0.5) {
+          energyForecast = generateEnergyForecast('high');
+        } else if (energySavingsPercentage >= 0.01) {
+          // for the "medium" system, generate medium outlook for energy forecast
+          energyForecast = generateEnergyForecast('medium');
+        } else {
+          // for the "negative" system, generate bad outlook for energy forecast
+          energyForecast = generateEnergyForecast('low');
+        }
+        return energyForecast;
       },
     });
   } catch (err) {

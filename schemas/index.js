@@ -69,6 +69,14 @@ export const productSchema = {
   required: ['name', 'description', 'imageUrl'],
 };
 
+export const forecastSchema = {
+  type: 'object',
+  properties: {
+    date: { type: 'string', format: 'date' },
+    irradiation: { type: 'number' },
+  },
+};
+
 export const errorSchema = {
   type: 'object',
   properties: {
