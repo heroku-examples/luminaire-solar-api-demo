@@ -90,6 +90,10 @@ export default async function (fastify, _opts) {
               callback(err);
             }
           },
+          flush(callback) {
+            this.push('\n');
+            callback();
+          },
         });
 
         jsonStream.on('error', (err) => {
@@ -130,6 +134,8 @@ export default async function (fastify, _opts) {
         if (toolCall) {
           const args = JSON.parse(toolCall.function?.arguments || '{}');
           const functionName = toolCall.function?.name;
+
+          fastify.log.info(toolCall, 'agent tool call');
 
           if (
             /^web_browsing_single_page|^web_browsing_multi_page/.test(
