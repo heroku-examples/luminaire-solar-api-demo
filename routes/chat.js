@@ -64,43 +64,30 @@ export default async function (fastify, _opts) {
           objectMode: true,
         });
 
-        // const heartbeat = setInterval(() => {
-        //   jsonStream.push({
-        //     choices: [
-        //       {
-        //         message: { role: 'agent', content: 'Still working...' },
-        //       },
-        //     ],
-        //   });
-        // }, 30000);
+        const extractMessage = (chunk) => {
+          return chunk.choices[0]?.delta || chunk.choices[0]?.message;
+        };
 
         const summarizeStream = new Transform({
           objectMode: true,
           transform(chunk, encoding, callback) {
             try {
+              const message = extractMessage(chunk);
+              if (
+                (message.role === 'assistant' && !message.tool_calls) ||
+                message.role === ''
+              ) {
+                this.push(message.content);
+                return callback();
+              }
               const summarizedResponse = JSON.stringify({
                 role: 'agent',
-                content: summarizeMessage(chunk.choices[0]?.message),
+                content: summarizeMessage(message),
               });
               this.lastChunk = chunk;
               callback(null, summarizedResponse + '\n');
             } catch (err) {
               callback(err);
-            }
-          },
-          flush(callback) {
-            try {
-              if (this.lastChunk) {
-                const lastResponse = JSON.stringify(
-                  this.lastChunk.choices[0]?.message || {}
-                );
-                this.push(lastResponse + '\n');
-              }
-              callback();
-            } catch (err) {
-              callback(err);
-            } finally {
-              // clearInterval(heartbeat);
             }
           },
         });
@@ -129,7 +116,7 @@ export default async function (fastify, _opts) {
   );
 
   function summarizeMessage(message) {
-    switch (message.role) {
+    switch (message?.role) {
       case 'user':
         return 'Prompt sent.';
 
@@ -153,7 +140,7 @@ export default async function (fastify, _opts) {
           } else if (/^code_exec_ruby/.test(functionName)) {
             return 'Executing Ruby code...';
           } else if (/^code_exec_python/.test(functionName)) {
-            return 'Executing Python code...';
+            return `Executing Python code... ${message.content}`;
           } else if (/^code_exec_node/.test(functionName)) {
             return 'Executing Node.js code...';
           } else if (/^code_exec_go/.test(functionName)) {
@@ -164,8 +151,6 @@ export default async function (fastify, _opts) {
             return 'Querying the database...';
           } else if (/^dyno_run_command/.test(functionName)) {
             return 'Running the command on the Heroku dyno...';
-          } else if (functionName === 'create_pie_chart') {
-            return 'The agent is requesting a local tool...';
           } else if (/^search_web/.test(functionName)) {
             return `Searching the web for ${args.search_query} ...`;
           } else if (/^pdf_read/.test(functionName)) {
@@ -177,7 +162,7 @@ export default async function (fastify, _opts) {
         break;
 
       default:
-        return 'Unknown role.';
+        return message.content;
     }
   }
 }

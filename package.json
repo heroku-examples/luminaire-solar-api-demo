@@ -25,6 +25,8 @@
     "precommit": "lint-staged"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
     "@faker-js/faker": "^8.4.1",
     "@fastify/auth": "^4.6.1",
     "@fastify/autoload": "^5.8.2",

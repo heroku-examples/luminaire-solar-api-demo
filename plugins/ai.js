@@ -4,13 +4,13 @@ import { config } from '../config.js';
 
 export default fp(async (fastify) => {
   const client = new OpenAI({
-    apiKey: config.DYNO_INTEROP_TOKEN,
-    baseURL: config.DYNO_INTEROP_BASE_URL,
+    apiKey: config.INFERENCE_KEY,
+    baseURL: config.INFERENCE_URL + '/v1',
   });
   fastify.decorate('ai', {
     executeCompletion: async (question) => {
       const PROMPT = `
-      If plotting questions are asked, use matplotlib for plotting. Upload the PNG to S3, set the content-type as image/png, and return the image as a pre-signed S3 URL that expires after 18 hours.
+      If plotting questions are asked, use matplotlib for plotting. Then pass the binary as input parameter to the command upload_to_s3, use the returned url in the response.
 
       Always fetch the database schema before attempting to query the database.
 
@@ -33,7 +33,7 @@ export default fp(async (fastify) => {
       Question: ${question}
       `;
       return client.chat.completions.create({
-        model: 'claude-3-5-sonnet',
+        model: config.INFERENCE_MODEL_ID,
         messages: [
           {
             role: 'user',
@@ -43,7 +43,9 @@ export default fp(async (fastify) => {
         tools: [
           {
             type: 'heroku_tool',
-            function: 'database_get_schema',
+            function: {
+              name: 'database_get_schema',
+            },
             runtime_params: {
               target_app_name: config.APP_NAME,
               tool_params: {
@@ -53,7 +55,9 @@ export default fp(async (fastify) => {
           },
           {
             type: 'heroku_tool',
-            function: 'database_run_query',
+            function: {
+              name: 'database_run_query',
+            },
             runtime_params: {
               target_app_name: config.APP_NAME,
               tool_params: {
@@ -63,11 +67,41 @@ export default fp(async (fastify) => {
           },
           {
             type: 'heroku_tool',
-            function: 'web_browsing_multi_page',
+            function: {
+              name: 'web_browsing_multi_page',
+            },
           },
           {
             type: 'heroku_tool',
-            function: 'code_exec_python',
+            function: {
+              name: 'code_exec_python',
+            },
+            runtime_params: {
+              target_app_name: config.APP_NAME,
+            },
+          },
+          {
+            type: 'heroku_tool',
+            function: {
+              name: 'dyno_run_command',
+            },
+            runtime_params: {
+              target_app_name: config.APP_NAME,
+              tool_params: {
+                cmd: 'scripts/upload_to_s3',
+              },
+            },
+            //description: 'Accepts a binary image file and uploads it to S3.',
+            // parameters: {
+            //   type: 'object',
+            //   properties: {
+            //     file: {
+            //       type: 'string',
+            //       description: 'The binary image file to upload',
+            //     },
+            //   },
+            //   required: ['file'],
+            // },
           },
         ],
         tool_choice: 'auto',
