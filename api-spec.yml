@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: Luminaire Solar API
+  description: Provides access to the Luminaire Solar API
+  version: "1.0"
+components:
+  securitySchemes:
+    BearerAuth:
+      description: RSA256 JWT signed by secret key, with user in payload
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    chat:
+      type: object
+      description: Question to the AI agent
+      properties:
+        question:
+          type: string
+      required:
+        - question
+    chatResponse:
+      type: object
+      description: Response from the AI agent
+      properties:
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+            - agent
+            - error
+          description: The role of the message sender
+        content:
+          type: string
+          description: The message content chunk
+      required:
+        - role
+        - content
+    system:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        country:
+          type: string
+      required:
+        - address
+        - city
+        - state
+        - zip
+        - country
+    metric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        system_id:
+          type: string
+          format: uuid
+        energy_produced:
+          type: number
+        energy_consumed:
+          type: number
+        datetime:
+          type: string
+          format: date-time
+      required:
+        - system_id
+        - energy_produced
+        - energy_consumed
+    summary:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        total_energy_produced:
+          type: number
+        total_energy_consumed:
+          type: number
+      required:
+        - date
+        - total_energy_produced
+        - total_energy_consumed
+    allSummary:
+      type: object
+      properties:
+        daily:
+          type: array
+          items:
+            $ref: "#/components/schemas/summary"
+        weekly:
+          type: array
+          items:
+            $ref: "#/components/schemas/summary"
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/summary"
+      required:
+        - daily
+        - weekly
+        - monthly
+    error:
+      type: object
+      properties:
+        statusCode:
+          type: number
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - statusCode
+        - error
+        - message
+    product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        price:
+          type: number
+        productCode:
+          type: string
+      required:
+        - name
+        - description
+        - imageUrl
+    user:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - name
+        - last_name
+        - email
+        - username
+paths:
+  /api/chat:
+    post:
+      tags:
+        - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Ask a question to the AI agent
+              $ref: "#/components/schemas/chat"
+        description: Ask a question to the AI agent
+      responses:
+        "200":
+          description: A stream of newline-delimited JSON chat responses.
+          content:
+            application/x-ndjson:
+              schema:
+                $ref: "#/components/schemas/chatResponse"
+  /api/systems:
+    get:
+      tags:
+        - systems
+      description: Get all systems
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: All registered systems
+          content:
+            application/json:
+              schema:
+                description: All registered systems
+                type: array
+                items:
+                  $ref: "#/components/schemas/system"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: Internal Server Error
+                $ref: "#/components/schemas/error"
+  /api/metrics/{systemId}:
+    get:
+      tags:
+        - metrics
+      description: Get metrics for a system
+      parameters:
+        - schema:
+            type: string
+            format: date
+          in: query
+          name: date
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Metrics for the system
+          content:
+            application/json:
+              schema:
+                description: Metrics for the system
+                type: array
+                items:
+                  $ref: "#/components/schemas/metric"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: Internal Server Error
+                $ref: "#/components/schemas/error"
+  /api/summary/{systemId}:
+    get:
+      tags:
+        - metrics
+      description: Get summary for a system
+      parameters:
+        - schema:
+            type: string
+            format: date
+          in: query
+          name: date
+          required: false
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Summary for the system
+          content:
+            application/json:
+              schema:
+                description: Summary for the system
+                type: object
+                $ref: "#/components/schemas/allSummary"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: Internal Server Error
+                $ref: "#/components/schemas/error"
+  /api/products:
+    get:
+      tags:
+        - products
+      description: Get all products
+      responses:
+        "200":
+          description: All products
+          content:
+            application/json:
+              schema:
+                description: All products
+                type: array
+                items:
+                  $ref: "#/components/schemas/product"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: Internal Server Error
+                $ref: "#/components/schemas/error"
+  /api/products/{id}:
+    get:
+      tags:
+        - products
+      description: Get product by id
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Product found
+          content:
+            application/json:
+              schema:
+                description: Product found
+                $ref: "#/components/schemas/product"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                description: Product not found
+                $ref: "#/components/schemas/error"
+  /api/user/authenticate:
+    post:
+      tags:
+        - users
+      description: Authenticate an user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+              required:
+                - username
+                - password
+        required: true
+      responses:
+        "200":
+          description: Authentication response
+          content:
+            application/json:
+              schema:
+                description: Authentication response
+                type: object
+                properties:
+                  authorization:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: Unauthorized
+                $ref: "#/components/schemas/error"
+  /api/user/register:
+    post:
+      tags:
+        - users
+      description: Register an user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/user"
+      responses:
+        "200":
+          description: User registration response
+          content:
+            application/json:
+              schema:
+                description: User registration response
+                $ref: "#/components/schemas/user"
+  /api/webhook:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /api/notify:
+    post:
+      responses:
+        "200":
+          description: Default Response
