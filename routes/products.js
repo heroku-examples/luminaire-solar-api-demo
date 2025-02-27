@@ -15,7 +15,8 @@ export default async function (fastify, _opts) {
     '/products',
     {
       schema: {
-        description: 'Get all products',
+        operationId: 'getAllProducts',
+        description: 'Return all the available products',
         tags: ['products'],
         response: {
           200: {
@@ -30,7 +31,7 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, reply) => {
       const products = await fastify.db.getProducts();
       let additionalProducts = [];
       try {
@@ -49,7 +50,8 @@ export default async function (fastify, _opts) {
     '/products/:id',
     {
       schema: {
-        description: 'Get product by id',
+        operationId: 'getProductById',
+        description: 'Returns a product by id',
         tags: ['products'],
         params: { id: { type: 'string' } },
         response: {

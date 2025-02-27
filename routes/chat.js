@@ -4,7 +4,7 @@ export default async function (fastify, _opts) {
   fastify.addSchema({
     $id: 'chat',
     type: 'object',
-    description: 'Question to the AI agent',
+    description: 'Question for the AI agent',
     properties: {
       question: { type: 'string' },
     },
@@ -33,6 +33,7 @@ export default async function (fastify, _opts) {
     '/chat',
     {
       schema: {
+        operationId: 'completionChat',
         body: {
           description: 'Ask a question to the AI agent',
           $ref: 'chat#',

@@ -13,7 +13,7 @@ components:
   schemas:
     chat:
       type: object
-      description: Question to the AI agent
+      description: Question for the AI agent
       properties:
         question:
           type: string
@@ -171,6 +171,7 @@ components:
 paths:
   /api/chat:
     post:
+      operationId: completionChat
       tags:
         - chat
       requestBody:
@@ -189,18 +190,19 @@ paths:
                 $ref: "#/components/schemas/chatResponse"
   /api/systems:
     get:
+      operationId: getAllSystems
       tags:
         - systems
-      description: Get all systems
+      description: Returns all the registered systems the authenticated user has access to
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: All registered systems
+          description: All the registered systems for the authenticated user
           content:
             application/json:
               schema:
-                description: All registered systems
+                description: All the registered systems for the authenticated user
                 type: array
                 items:
                   $ref: "#/components/schemas/system"
@@ -213,16 +215,17 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/metrics/{systemId}:
     get:
+      operationId: getMetricsBySystem
       tags:
         - metrics
-      description: Get metrics for a system
+      description: It returns all the metrics associated to a system
       parameters:
         - schema:
             type: string
             format: date
           in: query
           name: date
-          required: true
+          required: false
         - schema:
             type: string
           in: path
@@ -249,9 +252,10 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/summary/{systemId}:
     get:
+      operationId: getMetricsSummaryBySystem
       tags:
         - metrics
-      description: Get summary for a system
+      description: Returns the metrics summary for a system at a given date
       parameters:
         - schema:
             type: string
@@ -268,11 +272,11 @@ paths:
         - BearerAuth: []
       responses:
         "200":
-          description: Summary for the system
+          description: Metrics summary for the system
           content:
             application/json:
               schema:
-                description: Summary for the system
+                description: Metrics summary for the system
                 type: object
                 $ref: "#/components/schemas/allSummary"
         "500":
@@ -284,9 +288,10 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/products:
     get:
+      operationId: getAllProducts
       tags:
         - products
-      description: Get all products
+      description: Return all the available products
       responses:
         "200":
           description: All products
@@ -306,9 +311,10 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/products/{id}:
     get:
+      operationId: getProductById
       tags:
         - products
-      description: Get product by id
+      description: Returns a product by id
       parameters:
         - schema:
             type: string
@@ -332,6 +338,7 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/user/authenticate:
     post:
+      operationId: authenticate
       tags:
         - users
       description: Authenticate an user
@@ -370,6 +377,7 @@ paths:
                 $ref: "#/components/schemas/error"
   /api/user/register:
     post:
+      operationId: register
       tags:
         - users
       description: Register an user

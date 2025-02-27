@@ -16,6 +16,7 @@ export default async function (fastify, _opts) {
     url: '/user/authenticate',
     preHandler: fastify.auth([fastify.verifyUserAndPassword]),
     schema: {
+      operationId: 'authenticate',
       description: 'Authenticate an user',
       body: {
         type: 'object',
@@ -54,6 +55,7 @@ export default async function (fastify, _opts) {
     '/user/register',
     {
       schema: {
+        operationId: 'register',
         description: 'Register an user',
         body: {
           $ref: 'user#',

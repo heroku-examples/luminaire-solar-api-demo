@@ -36,12 +36,14 @@ export default async function (fastify, _opts) {
     method: 'GET',
     url: '/systems',
     schema: {
+      operationId: 'getAllSystems',
       security: [{ BearerAuth: [] }],
-      description: 'Get all systems',
+      description:
+        'Returns all the registered systems the authenticated user has access to',
       tags: ['systems'],
       response: {
         200: {
-          description: 'All registered systems',
+          description: 'All the registered systems for the authenticated user',
           type: 'array',
           items: { $ref: 'system#' },
         },
@@ -61,8 +63,9 @@ export default async function (fastify, _opts) {
 
   fastify.get('/metrics/:systemId', {
     schema: {
+      operationId: 'getMetricsBySystem',
       security: [{ BearerAuth: [] }],
-      description: 'Get metrics for a system',
+      description: 'It returns all the metrics associated to a system',
       tags: ['metrics'],
       params: {
         type: 'object',
@@ -77,7 +80,6 @@ export default async function (fastify, _opts) {
         properties: {
           date: { type: 'string', format: 'date' },
         },
-        required: ['date'],
       },
       response: {
         200: {
@@ -93,8 +95,8 @@ export default async function (fastify, _opts) {
     },
     preHandler: fastify.auth([fastify.verifyJwt]),
     handler: async function (request, reply) {
-      const { date } = request.query;
       const { systemId } = request.params;
+      const date = request.params.date || new Date().toISOString();
 
       const metrics = await fastify.db.getMetricsBySystem(systemId, date);
       reply.send(metrics);
@@ -103,8 +105,9 @@ export default async function (fastify, _opts) {
 
   fastify.get('/summary/:systemId', {
     schema: {
+      operationId: 'getMetricsSummaryBySystem',
       security: [{ BearerAuth: [] }],
-      description: 'Get summary for a system',
+      description: 'Returns the metrics summary for a system at a given date',
       tags: ['metrics'],
       params: {
         type: 'object',
@@ -122,7 +125,7 @@ export default async function (fastify, _opts) {
       },
       response: {
         200: {
-          description: 'Summary for the system',
+          description: 'Metrics summary for the system',
           type: 'object',
           $ref: 'allSummary#',
         },
