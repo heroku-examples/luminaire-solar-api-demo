@@ -1,5 +1,6 @@
 export const config = {
   APP_NAME: process.env.APP_NAME || 'luminaire-solar-api-mia',
+  PYTHON_RUNNER: process.env.PYTHON_RUNNER || 'jduque-mia-python-runner',
   DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT || 'DATABASE',
   DATABASE_URL: process.env.DATABASE_URL,
   PORT: +process.env.PORT || 3000,
