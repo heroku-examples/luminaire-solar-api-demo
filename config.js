@@ -3,6 +3,7 @@ export const config = {
   PYTHON_RUNNER: process.env.PYTHON_RUNNER || 'jduque-mia-python-runner',
   DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT || 'DATABASE',
   DATABASE_URL: process.env.DATABASE_URL,
+  REDIS_URL: process.env.REDIS_URL,
   PORT: +process.env.PORT || 3000,
   JWT_SECRET: process.env.JWT_SECRET || 'supersecret',
   INFERENCE_KEY: process.env.INFERENCE_KEY,

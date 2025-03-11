@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin';
 import { OpenAI } from 'openai';
 import { config } from '../config.js';
+import { randomUUID } from 'node:crypto';
 
 export default fp(async (fastify) => {
   const client = new OpenAI({
@@ -8,7 +9,31 @@ export default fp(async (fastify) => {
     baseURL: config.INFERENCE_URL + '/v1',
   });
   fastify.decorate('ai', {
-    executeCompletion: async (question) => {
+    /**
+     * Execute a chat completion with memory
+     * @param {string} question - The user's question
+     * @param {Object} options - Options for the completion
+     * @param {string} options.sessionId - The session ID (optional, will be generated if not provided)
+     * @param {string} options.userId - The user ID (optional)
+     * @returns {Promise<ReadableStream>} - The completion stream
+     */
+    executeCompletion: async (question, options = {}) => {
+      // Generate a session ID if not provided
+      const sessionId = options.sessionId || randomUUID();
+      const userId = options.userId || null;
+
+      // Store the user's question in chat memory
+      await fastify.chatMemory.storeMessage({
+        sessionId,
+        userId,
+        role: 'user',
+        content: question,
+      });
+
+      // Get previous messages from chat memory
+      const previousMessages =
+        await fastify.chatMemory.getFormattedMessages(sessionId);
+
       const PROMPT = `
 # Luminaire Agent: Energy Data Specialist
 
@@ -26,6 +51,7 @@ You are Luminaire Agent, an AI assistant specialized in analyzing and presenting
 - **Image generation**: Just generate an emage if asked for a chart or a plot or a visualization
 - **Data storage**: Upload all generated images to S3 using environment credentials
 - **Database access**: Always fetch schema before querying the database
+- **Database query**: Only use the database to answer questions about the user's solar system metrics or products
 - **Measurement standard**: Use kilowatt-hours (kWh) for all energy units
 
 ## S3 Image Management
@@ -81,18 +107,28 @@ When creating visualizations:
 ## Process Transparency
 When using tools, briefly explain what you're doing without excessive detail:
 "Analyzing your January production data..." rather than "I am now executing a query to extract the January production metrics from the database..."`;
-      return client.chat.completions.create({
+
+      // Create messages array with system prompt and previous messages
+      const messages = [
+        {
+          role: 'system',
+          content: PROMPT,
+        },
+        ...previousMessages,
+      ];
+
+      // If there are no previous messages, add the current question
+      if (previousMessages.length === 0) {
+        messages.push({
+          role: 'user',
+          content: question,
+        });
+      }
+
+      // Execute the completion
+      const response = await client.chat.completions.create({
         model: config.INFERENCE_MODEL_ID,
-        messages: [
-          {
-            role: 'system',
-            content: PROMPT,
-          },
-          {
-            role: 'user',
-            content: question,
-          },
-        ],
+        messages,
         tools: [
           {
             type: 'heroku_tool',
@@ -144,6 +180,27 @@ When using tools, briefly explain what you're doing without excessive detail:
         tool_choice: 'auto',
         stream: true,
       });
+
+      return response;
+    },
+
+    /**
+     * Get chat history for a session
+     * @param {string} sessionId - The session ID
+     * @param {number} limit - The maximum number of messages to retrieve (default: 10)
+     * @returns {Promise<Array>} - The chat history
+     */
+    getChatHistory: async (sessionId, limit = 10) => {
+      return fastify.chatMemory.getSessionMessages(sessionId, limit);
+    },
+
+    /**
+     * Clear chat history for a session
+     * @param {string} sessionId - The session ID
+     * @returns {Promise<number>} - The number of deleted messages
+     */
+    clearChatHistory: async (sessionId) => {
+      return fastify.chatMemory.deleteSessionMessages(sessionId);
     },
   });
 });

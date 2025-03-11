@@ -9,6 +9,7 @@
 - An [Heroku](https://signup.heroku.com/) account
 - [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
 - PostgreSQL [psql](https://www.postgresql.org/download/) client
+- Redis server (for chat memory)
 
 ## Installation
 
@@ -40,6 +41,12 @@ Install the [Heroku PostgreSQL addon](https://elements.heroku.com/addons/heroku-
 
 ```sh
  heroku addons:create heroku-postgresql:essential-0
+```
+
+Install the [Heroku Redis addon](https://elements.heroku.com/addons/heroku-redis):
+
+```sh
+heroku addons:create heroku-redis:mini
 ```
 
 Once the PostgreSQL database is created, setup the database schema with:

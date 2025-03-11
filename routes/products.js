@@ -16,16 +16,19 @@ export default async function (fastify, _opts) {
     {
       schema: {
         operationId: 'getAllProducts',
-        description: 'Return all the available products',
+        description:
+          'Retrieves a comprehensive catalog of all available solar products and equipment in the system. This endpoint provides complete product information including names, descriptions, images, and pricing to help customers make informed purchasing decisions.',
         tags: ['products'],
         response: {
           200: {
-            description: 'All products',
+            description:
+              'Successfully retrieved the complete list of solar products and equipment with all details including names, descriptions, images, and pricing information.',
             type: 'array',
             items: { $ref: 'product#' },
           },
           500: {
-            description: 'Internal Server Error',
+            description:
+              'Server encountered an unexpected error while retrieving product data. The error details provide information about what went wrong during the operation.',
             $ref: 'error#',
           },
         },
@@ -51,12 +54,30 @@ export default async function (fastify, _opts) {
     {
       schema: {
         operationId: 'getProductById',
-        description: 'Returns a product by id',
+        description:
+          'Retrieves detailed information about a specific solar product by its unique identifier. This endpoint provides comprehensive product details including name, description, image, pricing, and product code for a single product item.',
         tags: ['products'],
-        params: { id: { type: 'string' } },
+        params: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description:
+                'Unique identifier (UUID) of the specific solar product to retrieve',
+            },
+          },
+        },
         response: {
-          200: { description: 'Product found', $ref: 'product#' },
-          404: { description: 'Product not found', $ref: 'error#' },
+          200: {
+            description:
+              'Successfully retrieved the requested solar product with complete details including name, description, image, pricing, and product code.',
+            $ref: 'product#',
+          },
+          404: {
+            description:
+              'The requested solar product could not be found. This may occur if the product ID is invalid or if the product has been removed from the catalog.',
+            $ref: 'error#',
+          },
         },
       },
     },
