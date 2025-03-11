@@ -1,9 +1,12 @@
 import {
   systemSchema,
+  systemComponentSchema,
+  activityHistorySchema,
   metricSchema,
   summarySchema,
   allSummarySchema,
   forecastSchema,
+  systemWeatherSchema,
   errorSchema,
 } from '../schemas/index.js';
 
@@ -11,6 +14,21 @@ export default async function (fastify, _opts) {
   fastify.addSchema({
     $id: 'system',
     ...systemSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'systemComponent',
+    ...systemComponentSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'activityHistory',
+    ...activityHistorySchema,
+  });
+
+  fastify.addSchema({
+    $id: 'systemWeather',
+    ...systemWeatherSchema,
   });
 
   fastify.addSchema({
@@ -148,6 +166,109 @@ export default async function (fastify, _opts) {
         date
       );
       reply.send(summary);
+    },
+  });
+
+  fastify.get('/system/:systemId', {
+    schema: {
+      security: [{ BearerAuth: [] }],
+      description: 'Get summary for a system',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          description: 'Details of the system',
+          type: 'object',
+          $ref: 'system#',
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
+        },
+      },
+    },
+    preHandler: fastify.auth([fastify.verifyJwt]),
+    handler: async function (request, reply) {
+      const { systemId } = request.params;
+
+      const { system, components } =
+        await fastify.db.getSystemDetails(systemId);
+      reply.send({
+        ...system,
+        components,
+      });
+    },
+  });
+
+  fastify.get('/system/:systemId/activityHistory', {
+    schema: {
+      security: [{ BearerAuth: [] }],
+      description: 'Get the actvity history for a system',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          description: 'The activity history for a system',
+          type: 'object',
+          $ref: 'activityHistory#',
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
+        },
+      },
+    },
+    preHandler: fastify.auth([fastify.verifyJwt]),
+    handler: async function (request, reply) {
+      const { systemId } = request.params;
+
+      const pastMonth = await fastify.db.getActivityHistoryBySystem(systemId);
+      reply.send({ pastMonth: pastMonth });
+    },
+  });
+
+  fastify.get('/system/:systemId/weather', {
+    schema: {
+      security: [{ BearerAuth: [] }],
+      description: 'Get the current weather in the area of the system.',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          description: 'The weather data',
+          type: 'object',
+          $ref: 'systemWeather#',
+        },
+        500: {
+          description: 'Internal Server Error',
+          $ref: 'error#',
+        },
+      },
+    },
+    preHandler: fastify.auth([fastify.verifyJwt]),
+    handler: async function (request, reply) {
+      const { systemId } = request.params;
+
+      const weather = await fastify.db.getWeatherBySystem(systemId);
+      reply.send(weather);
     },
   });
 

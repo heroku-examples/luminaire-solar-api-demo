@@ -47,13 +47,14 @@ async function seed() {
     // Seed systems
     for (let i = 0; i < SYSTEM_COUNT; i++) {
       const system = await client.query(
-        `INSERT INTO systems (address, city, state, zip, country) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
         [
           faker.location.streetAddress(),
           faker.location.city(),
           faker.location.state(),
           faker.location.zipCode(),
           'US',
+          faker.number.int({ min: 0, max: 100 }),
         ]
       );
       systemIds.push(system.rows[0].id);
@@ -191,6 +192,21 @@ async function seed() {
           products[i].imageUrl,
           products[i].price,
         ]
+      );
+    }
+
+    /**
+     * Seed system components.
+     */
+    for (let systemId of systemIds) {
+      const name =
+        products[faker.number.int({ min: 0, max: products.length - 1 })].name;
+      const active = faker.datatype.boolean();
+      await client.query(
+        `
+        INSERT INTO system_components (system_id, name, active) VALUES ($1, $2, $3)
+      `,
+        [systemId, name, active]
       );
     }
   } finally {

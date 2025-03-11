@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fp from 'fastify-plugin';
 import generateEnergyForecast from '../data/mockForecast.js';
+import WeatherService from '../services/weather/index.js';
 
 export default fp(async (fastify) => {
   try {
@@ -58,6 +59,38 @@ export default fp(async (fastify) => {
         const { rows } = await client.query(
           'SELECT * FROM metrics WHERE system_id = $1 AND datetime::date = $2',
           [systemId, date]
+        );
+        return rows;
+      },
+      getSystemDetails: async (systemId) => {
+        const { rows: systemRows } = await client.query(
+          `SELECT * FROM systems WHERE systems.id = $1`,
+          [systemId]
+        );
+        const { rows: componentsRows } = await client.query(
+          `SELECT id, name, active FROM system_components WHERE system_components.system_id = $1`,
+          [systemId]
+        );
+        return {
+          system: systemRows[0],
+          components: componentsRows,
+        };
+      },
+      getActivityHistoryBySystem: async (systemId) => {
+        // Last 30 days
+        const today = new Date(new Date().setHours(23, 59, 59, 999)); // end date is today near 24th hour
+        let startDate = new Date(new Date().setDate(today.getDate() - 30)); // start date is 30 days ago near 0th hour
+        startDate = new Date(startDate.setHours(0, 0, 0, 0));
+        console.log(systemId, startDate, today);
+        const { rows } = await client.query(
+          `SELECT date_trunc('day', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+          GROUP BY date_trunc('day', datetime)
+          ORDER BY date_trunc('day', datetime) DESC`,
+          [systemId, startDate, today]
         );
         return rows;
       },
@@ -182,6 +215,20 @@ export default fp(async (fastify) => {
           energyForecast = generateEnergyForecast('low');
         }
         return energyForecast;
+      },
+      getWeatherBySystem: async (systemId) => {
+        const { rows: systems } = await client.query(
+          `
+            SELECT zip, country
+            FROM systems
+            WHERE id = $1
+          `,
+          [systemId]
+        );
+        const system = systems[0];
+        const weatherService = new WeatherService(system.zip, system.country);
+        const weatherRows = await weatherService.getWeather();
+        return weatherRows[0];
       },
     });
   } catch (err) {

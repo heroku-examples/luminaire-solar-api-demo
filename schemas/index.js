@@ -7,8 +7,50 @@ export const systemSchema = {
     state: { type: 'string' },
     zip: { type: 'string' },
     country: { type: 'string' },
+    battery_storage: { type: 'number' },
+    components: { type: 'array', items: { $ref: 'systemComponent#' } },
   },
   required: ['address', 'city', 'state', 'zip', 'country'],
+};
+
+export const systemComponentSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    system_id: { type: 'string', format: 'uuid' },
+    name: { type: 'string' },
+    active: { type: 'boolean' },
+  },
+};
+
+export const activityHistorySchema = {
+  type: 'object',
+  properties: {
+    pastMonth: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          total_energy_produced: {
+            type: 'number',
+          },
+          total_energy_consumed: {
+            type: 'number',
+          },
+          date: { type: 'string', format: 'datetime' },
+        },
+      },
+    },
+  },
+};
+
+export const systemWeatherSchema = {
+  type: 'object',
+  properties: {
+    temperature: { type: 'number' },
+    description: { type: 'string' },
+  },
+  required: ['temperature', 'description'],
 };
 
 export const metricSchema = {
