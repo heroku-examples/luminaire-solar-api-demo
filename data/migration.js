@@ -5,7 +5,12 @@ import Postgrator from 'postgrator';
 import path from 'node:path';
 
 async function migrate() {
-  const client = new pg.Client({ connectionString: config.DATABASE_URL });
+  const client = new pg.Client({
+    connectionString: config.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
 
   try {
     await client.connect();
