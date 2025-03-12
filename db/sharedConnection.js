@@ -10,10 +10,9 @@ import pg from 'pg';
 async function main() {
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //   rejectUnauthorized: false,
-    // },
-    ssl: false,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   });
 
   const client = await pool.connect();
