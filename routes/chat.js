@@ -69,14 +69,12 @@ export default async function (fastify, _opts) {
     preHandler: fastify.auth([fastify.verifyJwt]),
     handler: async function (request, reply) {
       const { question, sessionId = randomUUID() } = request.body;
-      const userId = request.user?.user?.id || null;
-      const isNewConversation = !request.body.sessionId;
+      let isNewConversation = !request.body.sessionId;
 
       try {
         // Get the completion stream with memory
         const stream = await fastify.ai.executeCompletion(question, {
           sessionId,
-          userId,
         });
 
         const jsonStream = Readable.from(stream, {
@@ -101,7 +99,7 @@ export default async function (fastify, _opts) {
                   timeZoneName: 'short',
                 });
 
-                const welcomeMessage = `Luminaire Agent is connected and ready to assist you. ${formattedTime}`;
+                const welcomeMessage = `Luminaire Agent session started at ${formattedTime}`;
 
                 const initialMessage =
                   JSON.stringify({
@@ -110,6 +108,7 @@ export default async function (fastify, _opts) {
                     sessionId,
                   }) + '\n';
                 this.push(initialMessage);
+                isNewConversation = false;
               }
 
               const message = extractMessage(chunk);
@@ -122,7 +121,6 @@ export default async function (fastify, _opts) {
                   fastify.chatMemory
                     .storeMessage({
                       sessionId,
-                      userId,
                       role: 'assistant',
                       content: message.content,
                     })
@@ -132,8 +130,8 @@ export default async function (fastify, _opts) {
                         'Error storing assistant message in chat memory'
                       );
                     });
+                  this.push(message.content);
                 }
-                this.push(message.content);
                 return callback();
               }
 
@@ -148,6 +146,13 @@ export default async function (fastify, _opts) {
               callback(null, summarizedResponse);
             } catch (err) {
               fastify.log.error({ err, chunk }, 'Error in transform stream');
+              this.push(
+                JSON.stringify({
+                  role: 'error',
+                  content: err.message,
+                  sessionId,
+                }) + '\n'
+              );
               callback(err);
             }
           },

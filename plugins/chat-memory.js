@@ -10,19 +10,17 @@ export default fp(async (fastify) => {
 
     // Key prefixes for Redis
     const CHAT_SESSION_PREFIX = 'chat:session:';
-    const CHAT_USER_PREFIX = 'chat:user:';
 
     fastify.decorate('chatMemory', {
       /**
        * Store a message in the chat memory
        * @param {Object} message - The message to store
        * @param {string} message.sessionId - The session ID
-       * @param {string} message.userId - The user ID (optional)
        * @param {string} message.role - The role of the message sender (user, assistant, agent, error)
        * @param {string} message.content - The message content
        * @returns {Promise<Object>} - The stored message
        */
-      storeMessage: async ({ sessionId, userId, role, content }) => {
+      storeMessage: async ({ sessionId, role, content }) => {
         const timestamp = new Date().toISOString();
         const id = randomUUID();
 
@@ -30,7 +28,6 @@ export default fp(async (fastify) => {
         const message = {
           id,
           session_id: sessionId,
-          user_id: userId || null,
           role,
           content,
           timestamp,
@@ -43,20 +40,11 @@ export default fp(async (fastify) => {
           JSON.stringify(message)
         );
 
-        // 2. Set expiration for session (48 hours)
+        // 2. Set expiration for session (2 hours)
         await fastify.redis.expire(
           `${CHAT_SESSION_PREFIX}${sessionId}`,
-          60 * 60 * 48
+          60 * 60 * 2
         );
-
-        // 3. If user ID is provided, add to user's sessions set
-        if (userId) {
-          await fastify.redis.sadd(`${CHAT_USER_PREFIX}${userId}`, sessionId);
-          await fastify.redis.expire(
-            `${CHAT_USER_PREFIX}${userId}`,
-            60 * 60 * 48
-          );
-        }
 
         return message;
       },
@@ -77,45 +65,6 @@ export default fp(async (fastify) => {
 
         // Parse JSON strings to objects
         return messages.map((msg) => JSON.parse(msg));
-      },
-
-      /**
-       * Get messages for a user
-       * @param {string} userId - The user ID
-       * @param {number} limit - The maximum number of messages to retrieve (default: 50)
-       * @returns {Promise<Array>} - The messages
-       */
-      getUserMessages: async (userId, limit = 10) => {
-        // Get user's sessions
-        const sessions = await fastify.redis.smembers(
-          `${CHAT_USER_PREFIX}${userId}`
-        );
-
-        // Get the most recent message from each session
-        const messages = [];
-
-        for (const sessionId of sessions) {
-          // Get the last message from the session
-          const sessionMessages = await fastify.redis.lrange(
-            `${CHAT_SESSION_PREFIX}${sessionId}`,
-            -1,
-            -1
-          );
-
-          if (sessionMessages.length > 0) {
-            messages.push(JSON.parse(sessionMessages[0]));
-          }
-
-          // Stop if we've reached the limit
-          if (messages.length >= limit) {
-            break;
-          }
-        }
-
-        // Sort by timestamp (newest first)
-        return messages
-          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-          .slice(0, limit);
       },
 
       /**

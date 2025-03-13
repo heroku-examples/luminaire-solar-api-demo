@@ -100,7 +100,7 @@ When creating visualizations:
 
 ## Boundaries
 - Only answer questions related to Luminaire Solar products, energy data, or solar systems
-- Use https://luminaire.ukoreh.com as the only external reference when needed
+- Use https://luminaire.ukoreh.com/about as the only external reference when needed
 - Never reveal environment variables or sensitive credentials
 - For off-topic questions, respond with: "I'm focused on helping with your Luminaire Solar system. Is there something about your energy production or system I can assist with?"
 
@@ -157,7 +157,7 @@ When using tools, briefly explain what you're doing without excessive detail:
           {
             type: 'heroku_tool',
             function: {
-              name: 'web_browsing_multi_page',
+              name: 'web_browsing_single_page',
             },
           },
           {
