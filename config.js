@@ -1,10 +1,16 @@
 export const config = {
-  APP_NAME: process.env.APP_NAME || 'lumina-solar-api',
+  APP_NAME: process.env.APP_NAME || 'luminaire-solar-api-mia',
+  PYTHON_RUNNER: process.env.PYTHON_RUNNER || 'jduque-mia-python-runner',
   DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT || 'DATABASE',
   DATABASE_URL: process.env.DATABASE_URL,
+  REDIS_URL: process.env.REDIS_URL,
   PORT: +process.env.PORT || 3000,
   PUBLIC_KEY: JSON.parse(process.env.PUBLIC_KEY),
   PRIVATE_KEY: JSON.parse(process.env.PRIVATE_KEY),
   DYNO_INTEROP_BASE_URL: process.env.DYNO_INTEROP_BASE_URL,
   DYNO_INTEROP_TOKEN: process.env.DYNO_INTEROP_TOKEN,
+  JWT_SECRET: process.env.JWT_SECRET || 'supersecret',
+  INFERENCE_KEY: process.env.INFERENCE_KEY,
+  INFERENCE_MODEL_ID: process.env.INFERENCE_MODEL_ID,
+  INFERENCE_URL: process.env.INFERENCE_URL,
 };
