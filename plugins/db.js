@@ -102,57 +102,52 @@ export default fp(async (fastify) => {
 
         // Daily
         const { rows: dailyRows } = await client.query(
-          `SELECT date_trunc('day', datetime) as date, 
+          `SELECT 
             SUM(energy_produced) as total_energy_produced, 
             SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('day', datetime)
-        ORDER BY date_trunc('day', datetime) DESC`,
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
           [systemId, startOfDay, endOfDay]
         );
 
         // Weekly
-        const startOfWeek = new Date(date);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
+        const rollingStartWeek = new Date(date);
+        rollingStartWeek.setDate(rollingStartWeek.getDate() - 6);
+        rollingStartWeek.setHours(0, 0, 0, 0);
 
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
+        const rollingEndWeek = new Date(date);
+        rollingEndWeek.setHours(23, 59, 59, 999);
 
         const { rows: weeklyRows } = await client.query(
-          `SELECT date_trunc('week', datetime) as date, 
-          SUM(energy_produced) as total_energy_produced, 
-          SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('week', datetime)
-        ORDER BY date_trunc('week', datetime) DESC`,
-          [systemId, startOfWeek, endOfWeek]
+          `SELECT 
+            SUM(energy_produced) AS total_energy_produced, 
+            SUM(energy_consumed) AS total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
+          [systemId, rollingStartWeek, rollingEndWeek]
         );
 
         // Monthly
-        const startOfMonth = new Date(date);
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
+        const rollingStartMonth = new Date(date);
+        rollingStartMonth.setDate(rollingStartMonth.getDate() - 29);
+        rollingStartMonth.setHours(0, 0, 0, 0);
 
-        const endOfMonth = new Date(startOfMonth);
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
-        endOfMonth.setHours(23, 59, 59, 999);
+        const rollingEndMonth = new Date(date);
+        rollingEndMonth.setHours(23, 59, 59, 999);
 
         const { rows: monthlyRows } = await client.query(
-          `SELECT date_trunc('month', datetime) as date, 
-          SUM(energy_produced) as total_energy_produced, 
-          SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('month', datetime)
-        ORDER BY date_trunc('month', datetime) DESC`,
-          [systemId, startOfMonth, endOfMonth]
+          `SELECT 
+          SUM(energy_produced) AS total_energy_produced, 
+          SUM(energy_consumed) AS total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
+          [systemId, rollingStartMonth, rollingEndMonth]
         );
-        return { daily: dailyRows, weekly: weeklyRows, monthly: monthlyRows };
+        return {
+          daily: dailyRows[0],
+          weekly: weeklyRows[0],
+          monthly: monthlyRows[0],
+        };
       },
       getProducts: async () => {
         const { rows } = await client.query(

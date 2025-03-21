@@ -136,29 +136,29 @@ export const summarySchema = {
         'Total energy consumed by the property on this date in kilowatt-hours (kWh)',
     },
   },
-  required: ['date', 'total_energy_produced', 'total_energy_consumed'],
+  required: ['total_energy_produced', 'total_energy_consumed'],
 };
 
 export const allSummarySchema = {
   type: 'object',
   description:
-    'Comprehensive collection of energy summaries across different time periods (daily, weekly, monthly). This schema provides a complete overview of energy performance for trend analysis and reporting.',
+    'Comprehensive collection of energy summaries across different time periods (daily, past week, past month). This schema provides a complete overview of energy performance for trend analysis and reporting.',
   properties: {
     daily: {
-      type: 'array',
-      items: { $ref: 'summary#' },
+      type: 'object',
+      $ref: 'summary#',
       description:
         'Collection of daily energy summaries showing day-by-day performance',
     },
     weekly: {
-      type: 'array',
-      items: { $ref: 'summary#' },
+      type: 'object',
+      $ref: 'summary#',
       description:
         'Collection of weekly energy summaries showing week-by-week performance',
     },
     monthly: {
-      type: 'array',
-      items: { $ref: 'summary#' },
+      type: 'object',
+      $ref: 'summary#',
       description:
         'Collection of monthly energy summaries showing month-by-month performance',
     },

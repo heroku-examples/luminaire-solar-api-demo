@@ -147,7 +147,7 @@ export default async function (fastify, _opts) {
       operationId: 'getMetricsSummaryBySystem',
       security: [{ BearerAuth: [] }],
       description:
-        'Retrieves aggregated energy summaries for a solar system across multiple time periods (daily, weekly, monthly). This endpoint provides a comprehensive overview of energy production and consumption patterns, enabling trend analysis and performance evaluation over different timeframes.',
+        'Retrieves aggregated energy summaries for a solar system across multiple time periods (daily, past week, past month). This endpoint provides a comprehensive overview of energy production and consumption patterns, enabling trend analysis and performance evaluation over different timeframes.',
       tags: ['metrics'],
       params: {
         type: 'object',
