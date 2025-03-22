@@ -81,7 +81,6 @@ export default fp(async (fastify) => {
         const today = new Date(new Date().setHours(23, 59, 59, 999)); // end date is today near 24th hour
         let startDate = new Date(new Date().setDate(today.getDate() - 30)); // start date is 30 days ago near 0th hour
         startDate = new Date(startDate.setHours(0, 0, 0, 0));
-        console.log(systemId, startDate, today);
         const { rows } = await client.query(
           `SELECT date_trunc('day', datetime) as date, 
           SUM(energy_produced) as total_energy_produced, 
