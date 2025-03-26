@@ -153,14 +153,12 @@ export const allSummarySchema = {
     weekly: {
       type: 'object',
       $ref: 'summary#',
-      description:
-        'Collection of weekly energy summaries showing week-by-week performance',
+      description: 'Weekly energy summary showing week-by-week performance',
     },
     monthly: {
       type: 'object',
       $ref: 'summary#',
-      description:
-        'Collection of monthly energy summaries showing month-by-month performance',
+      description: 'Monthly energy summary showing month-by-month performance',
     },
   },
   required: ['daily', 'weekly', 'monthly'],
