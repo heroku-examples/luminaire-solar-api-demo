@@ -22,6 +22,7 @@ async function seed() {
     // Cleanup existing data
     await client.query('DELETE FROM metrics');
     await client.query('DELETE FROM users_systems');
+    await client.query('DELETE FROM system_components');
     await client.query('DELETE FROM systems');
     await client.query('DELETE FROM users');
     await client.query('DELETE FROM products');
@@ -91,9 +92,12 @@ async function seed() {
     ];
     for (let i = 0; i < systemIds.length; i++) {
       logger.info(`Seeding system ${i + 1} of ${systemIds.length}`);
+      const baseline = new Date();
+      baseline.setHours(0, 0, 0, 0);
+      const baselineTime = baseline.getTime();
       for (let j = 0; j < METRIC_COUNT; j++) {
         // inserts for ±30 days; ensure there is enough data to work for demo if run a month into the future
-        let date = new Date(Date.now() - j * 3600 * 1000);
+        let date = new Date(baselineTime - j * 3600 * 1000);
         date.setMinutes(0);
         date.setSeconds(0);
         date.setMilliseconds(0);
@@ -123,7 +127,7 @@ async function seed() {
             }),
           ]
         );
-        date = new Date(Date.now() + j * 3600 * 1000);
+        date = new Date(baselineTime + j * 3600 * 1000);
         date.setMinutes(0);
         date.setSeconds(0);
         date.setMilliseconds(0);
@@ -199,15 +203,38 @@ async function seed() {
      * Seed system components.
      */
     for (let systemId of systemIds) {
-      const name =
-        products[faker.number.int({ min: 0, max: products.length - 1 })].name;
-      const active = faker.datatype.boolean();
+      // Randomly choose the main component between 'SolarMax PowerBox' and 'EnerCharge Pro'
+      const mainComponent = faker.helpers.arrayElement([
+        'SolarMax PowerBox',
+        'EnerCharge Pro',
+      ]);
+      const mainActive = faker.datatype.boolean();
+
+      // Insert the main component
       await client.query(
         `
-        INSERT INTO system_components (system_id, name, active) VALUES ($1, $2, $3)
-      `,
-        [systemId, name, active]
+        INSERT INTO system_components (system_id, name, active) 
+        VALUES ($1, $2, $3)
+        `,
+        [systemId, mainComponent, mainActive]
       );
+
+      // If the main component is 'EnerCharge Pro', add a few Solar Panels
+      if (mainComponent === 'EnerCharge Pro') {
+        // Choose a random number of solar panels (between 2 and 5)
+        const numberOfPanels = faker.number.int({ min: 2, max: 5 });
+
+        for (let i = 0; i < numberOfPanels; i++) {
+          const panelActive = faker.datatype.boolean();
+          await client.query(
+            `
+            INSERT INTO system_components (system_id, name, active) 
+            VALUES ($1, $2, $3)
+            `,
+            [systemId, 'Solar Panel', panelActive]
+          );
+        }
+      }
     }
   } finally {
     client.release();
