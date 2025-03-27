@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import fp from 'fastify-plugin';
+import generateEnergyForecast from '../data/mockForecast.js';
+import WeatherService from '../services/weather/index.js';
 
 export default fp(async (fastify) => {
   try {
@@ -60,6 +62,37 @@ export default fp(async (fastify) => {
         );
         return rows;
       },
+      getSystemDetails: async (systemId) => {
+        const { rows: systemRows } = await client.query(
+          `SELECT * FROM systems WHERE systems.id = $1`,
+          [systemId]
+        );
+        const { rows: componentsRows } = await client.query(
+          `SELECT id, name, active FROM system_components WHERE system_components.system_id = $1`,
+          [systemId]
+        );
+        return {
+          system: systemRows[0],
+          components: componentsRows,
+        };
+      },
+      getActivityHistoryBySystem: async (systemId) => {
+        // Last 30 days
+        const today = new Date(new Date().setHours(23, 59, 59, 999)); // end date is today near 24th hour
+        let startDate = new Date(new Date().setDate(today.getDate() - 30)); // start date is 30 days ago near 0th hour
+        startDate = new Date(startDate.setHours(0, 0, 0, 0));
+        const { rows } = await client.query(
+          `SELECT date_trunc('day', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+          GROUP BY date_trunc('day', datetime)
+          ORDER BY date_trunc('day', datetime) DESC`,
+          [systemId, startDate, today]
+        );
+        return rows;
+      },
       getMetricsSummaryBySystem: async (systemId, date) => {
         // Daily
         const startDate = new Date(date);
@@ -68,57 +101,52 @@ export default fp(async (fastify) => {
 
         // Daily
         const { rows: dailyRows } = await client.query(
-          `SELECT date_trunc('day', datetime) as date, 
+          `SELECT 
             SUM(energy_produced) as total_energy_produced, 
             SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('day', datetime)
-        ORDER BY date_trunc('day', datetime) DESC`,
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
           [systemId, startOfDay, endOfDay]
         );
 
         // Weekly
-        const startOfWeek = new Date(date);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
+        const rollingStartWeek = new Date(date);
+        rollingStartWeek.setDate(rollingStartWeek.getDate() - 6);
+        rollingStartWeek.setHours(0, 0, 0, 0);
 
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
+        const rollingEndWeek = new Date(date);
+        rollingEndWeek.setHours(23, 59, 59, 999);
 
         const { rows: weeklyRows } = await client.query(
-          `SELECT date_trunc('week', datetime) as date, 
-          SUM(energy_produced) as total_energy_produced, 
-          SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('week', datetime)
-        ORDER BY date_trunc('week', datetime) DESC`,
-          [systemId, startOfWeek, endOfWeek]
+          `SELECT 
+            SUM(energy_produced) AS total_energy_produced, 
+            SUM(energy_consumed) AS total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
+          [systemId, rollingStartWeek, rollingEndWeek]
         );
 
         // Monthly
-        const startOfMonth = new Date(date);
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
+        const rollingStartMonth = new Date(date);
+        rollingStartMonth.setDate(rollingStartMonth.getDate() - 29);
+        rollingStartMonth.setHours(0, 0, 0, 0);
 
-        const endOfMonth = new Date(startOfMonth);
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
-        endOfMonth.setHours(23, 59, 59, 999);
+        const rollingEndMonth = new Date(date);
+        rollingEndMonth.setHours(23, 59, 59, 999);
 
         const { rows: monthlyRows } = await client.query(
-          `SELECT date_trunc('month', datetime) as date, 
-          SUM(energy_produced) as total_energy_produced, 
-          SUM(energy_consumed) as total_energy_consumed 
-        FROM metrics 
-        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
-        GROUP BY date_trunc('month', datetime)
-        ORDER BY date_trunc('month', datetime) DESC`,
-          [systemId, startOfMonth, endOfMonth]
+          `SELECT 
+          SUM(energy_produced) AS total_energy_produced, 
+          SUM(energy_consumed) AS total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3`,
+          [systemId, rollingStartMonth, rollingEndMonth]
         );
-        return { daily: dailyRows, weekly: weeklyRows, monthly: monthlyRows };
+        return {
+          daily: dailyRows[0],
+          weekly: weeklyRows[0],
+          monthly: monthlyRows[0],
+        };
       },
       getProducts: async () => {
         const { rows } = await client.query(
@@ -142,6 +170,59 @@ export default fp(async (fastify) => {
           [id]
         );
         return rows[0];
+      },
+      getEnergyForecast: async (systemId, date) => {
+        // deterministic (static) forecasts based on system performance, for TDX demo script purposes
+        const startOfMonth = new Date(date);
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const endOfMonth = new Date(startOfMonth);
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        const { rows: monthlyRows } = await client.query(
+          `SELECT date_trunc('month', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+          FROM metrics 
+          WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+          GROUP BY date_trunc('month', datetime)
+          ORDER BY date_trunc('month', datetime) DESC`,
+          [systemId, startOfMonth, endOfMonth]
+        );
+        const energySavingsPercentage =
+          (monthlyRows[0].total_energy_produced -
+            monthlyRows[0].total_energy_consumed) /
+          monthlyRows[0].total_energy_produced;
+
+        let energyForecast;
+        // for the "happy" system, generate good outlook for energy forecast, as per script
+        if (energySavingsPercentage >= 0.5) {
+          energyForecast = generateEnergyForecast('high');
+        } else if (energySavingsPercentage >= 0.01) {
+          // for the "medium" system, generate medium outlook for energy forecast
+          energyForecast = generateEnergyForecast('medium');
+        } else {
+          // for the "negative" system, generate bad outlook for energy forecast
+          energyForecast = generateEnergyForecast('low');
+        }
+        return energyForecast;
+      },
+      getWeatherBySystem: async (systemId) => {
+        const { rows: systems } = await client.query(
+          `
+            SELECT zip, country
+            FROM systems
+            WHERE id = $1
+          `,
+          [systemId]
+        );
+        const system = systems[0];
+        const weatherService = new WeatherService(system.zip, system.country);
+        const weatherRows = await weatherService.getWeather();
+        return weatherRows[0];
       },
     });
   } catch (err) {

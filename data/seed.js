@@ -2,9 +2,10 @@ import 'dotenv/config';
 import pg from 'pg';
 import { faker } from '@faker-js/faker';
 import { getLogger } from '../lib/logger.js';
+import crypto from 'node:crypto';
 
-const SYSTEM_COUNT = 10;
-const METRIC_COUNT = 24 * 10; // 24 metrics per day for 10 days
+const SYSTEM_COUNT = 3;
+const METRIC_COUNT = 24 * 30; // 24 metrics per day for 30 days
 
 const logger = getLogger();
 
@@ -21,31 +22,112 @@ async function seed() {
     // Cleanup existing data
     await client.query('DELETE FROM metrics');
     await client.query('DELETE FROM users_systems');
+    await client.query('DELETE FROM system_components');
     await client.query('DELETE FROM systems');
     await client.query('DELETE FROM users');
     await client.query('DELETE FROM products');
+
+    // Create a demo user. @TODO: refactor so that implementations can be unified via helpers
+    const name = 'demo';
+    const last_name = 'demo';
+    const email = 'demo@heroku.ca';
+    const username = 'demo';
+    const password = 'demo';
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = crypto
+      .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+      .toString('hex');
+
+    const { rows } = await client.query(
+      'INSERT INTO users (name, last_name, email, username, password, salt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, last_name, email, username',
+      [name, last_name, email, username, hashedPassword, salt]
+    );
+    const user = rows[0];
 
     const systemIds = [];
     // Seed systems
     for (let i = 0; i < SYSTEM_COUNT; i++) {
       const system = await client.query(
-        `INSERT INTO systems (address, city, state, zip, country) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
         [
           faker.location.streetAddress(),
           faker.location.city(),
           faker.location.state(),
           faker.location.zipCode(),
           'US',
+          faker.number.int({ min: 0, max: 100 }),
         ]
       );
       systemIds.push(system.rows[0].id);
     }
 
-    // Seed metrics
+    // Link user to systems
+    for (let systemId of systemIds) {
+      await client.query(
+        `INSERT INTO users_systems (user_id, system_id) VALUES ($1, $2)`,
+        [user.id, systemId]
+      );
+    }
+
+    /**
+     * Seed metrics.
+     * Intentionally cover different ratios of energy production:consumption for demo purposes.
+     */
+    const energyRatios = [
+      {
+        // max 20% leftover energy saved up
+        produced: { min: 20, max: 25 },
+        consumed: { min: 20, max: 20 },
+      },
+      {
+        // min 75% leftover energy saved up
+        produced: { min: 20, max: 25 },
+        consumed: { min: 0, max: 5 },
+      },
+      {
+        // max -25% leftover energy saved up
+        produced: { min: 15, max: 20 },
+        consumed: { min: 25, max: 30 },
+      },
+    ];
     for (let i = 0; i < systemIds.length; i++) {
       logger.info(`Seeding system ${i + 1} of ${systemIds.length}`);
+      const baseline = new Date();
+      baseline.setHours(0, 0, 0, 0);
+      const baselineTime = baseline.getTime();
       for (let j = 0; j < METRIC_COUNT; j++) {
-        let date = new Date(Date.now() - j * 3600 * 1000);
+        // inserts for ±30 days; ensure there is enough data to work for demo if run a month into the future
+        let date = new Date(baselineTime - j * 3600 * 1000);
+        date.setMinutes(0);
+        date.setSeconds(0);
+        date.setMilliseconds(0);
+        const minEnergyProduced =
+          energyRatios[i % energyRatios.length].produced.min;
+        const maxEnergyProduced =
+          energyRatios[i % energyRatios.length].produced.max;
+        const minEnergyConsumed =
+          energyRatios[i % energyRatios.length].consumed.min;
+        const maxEnergyConsumed =
+          energyRatios[i % energyRatios.length].consumed.max;
+
+        await client.query(
+          `INSERT INTO metrics (system_id, datetime, energy_produced, energy_consumed) VALUES ($1, $2, $3, $4)`,
+          [
+            systemIds[i],
+            date,
+            faker.number.float({
+              min: minEnergyProduced,
+              max: maxEnergyProduced,
+              fractionDigits: 2,
+            }),
+            faker.number.float({
+              min: minEnergyConsumed,
+              max: maxEnergyConsumed,
+              fractionDigits: 2,
+            }),
+          ]
+        );
+        date = new Date(baselineTime + j * 3600 * 1000);
         date.setMinutes(0);
         date.setSeconds(0);
         date.setMilliseconds(0);
@@ -54,8 +136,16 @@ async function seed() {
           [
             systemIds[i],
             date,
-            faker.number.float({ min: 0, max: 25, fractionDigits: 2 }),
-            faker.number.float({ min: 0, max: 20, fractionDigits: 2 }),
+            faker.number.float({
+              min: minEnergyProduced,
+              max: maxEnergyProduced,
+              fractionDigits: 2,
+            }),
+            faker.number.float({
+              min: minEnergyConsumed,
+              max: maxEnergyConsumed,
+              fractionDigits: 2,
+            }),
           ]
         );
       }
@@ -107,6 +197,44 @@ async function seed() {
           products[i].price,
         ]
       );
+    }
+
+    /**
+     * Seed system components.
+     */
+    for (let systemId of systemIds) {
+      // Randomly choose the main component between 'SolarMax PowerBox' and 'EnerCharge Pro'
+      const mainComponent = faker.helpers.arrayElement([
+        'SolarMax PowerBox',
+        'EnerCharge Pro',
+      ]);
+      const mainActive = faker.datatype.boolean();
+
+      // Insert the main component
+      await client.query(
+        `
+        INSERT INTO system_components (system_id, name, active) 
+        VALUES ($1, $2, $3)
+        `,
+        [systemId, mainComponent, mainActive]
+      );
+
+      // If the main component is 'EnerCharge Pro', add a few Solar Panels
+      if (mainComponent === 'EnerCharge Pro') {
+        // Choose a random number of solar panels (between 2 and 5)
+        const numberOfPanels = faker.number.int({ min: 2, max: 5 });
+
+        for (let i = 0; i < numberOfPanels; i++) {
+          const panelActive = faker.datatype.boolean();
+          await client.query(
+            `
+            INSERT INTO system_components (system_id, name, active) 
+            VALUES ($1, $2, $3)
+            `,
+            [systemId, 'Solar Panel', panelActive]
+          );
+        }
+      }
     }
   } finally {
     client.release();

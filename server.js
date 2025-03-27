@@ -1,10 +1,14 @@
 import { build } from './app.js';
-import { getLogger } from './lib/logger.js';
+import { loggerOptions } from './lib/logger.js';
+import { config } from './config.js';
 
-const port = +process.env.PORT || 3000;
-
+// Create the server instance
 const server = await build({
-  logger: getLogger(),
+  logger: loggerOptions,
 });
 
-await server.listen({ port, host: '0.0.0.0' });
+// In Fastify 5.x, the listen method only accepts an options object
+await server.listen({
+  port: config.PORT,
+  host: '0.0.0.0',
+});
