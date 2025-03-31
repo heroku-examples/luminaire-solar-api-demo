@@ -52,7 +52,7 @@ heroku addons:create heroku-redis:mini
 Once the PostgreSQL database is created, setup the database schema with:
 
 ```sh
-heroku pg:psql -f data/schema.sql
+node data/migration.js
 ```
 
 Make sure to fetch the database configuration to your local project by running:
