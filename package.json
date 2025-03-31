@@ -67,10 +67,10 @@
     ]
   },
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "volta": {
     "node": "22.14.0"
   },
-  "packageManager": "pnpm@10.0.0-alpha.0+sha512.856941ef22665d2f3e41c04e8d86ed757ef057fb2bc35011698bfa988ef5817cc1cdd28bb883e7f23f0568c75de5544d4750211d4276b9ba6d55369eb207a549"
+  "packageManager": "pnpm@10.7.0+sha512.6b865ad4b62a1d9842b61d674a393903b871d9244954f652b8842c2b553c72176b278f64c463e52d40fff8aba385c235c8c9ecf5cc7de4fd78b8bb6d49633ab6"
 }
