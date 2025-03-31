@@ -90,65 +90,72 @@ async function seed() {
         consumed: { min: 25, max: 30 },
       },
     ];
+    // Use a fixed baseline of today at midnight (local time)
+    const baseline = new Date();
+    baseline.setHours(0, 0, 0, 0);
+    const baselineTime = baseline.getTime();
+
+    // For each system, collect metric records in an array and then do a bulk insert
     for (let i = 0; i < systemIds.length; i++) {
       logger.info(`Seeding system ${i + 1} of ${systemIds.length}`);
-      const baseline = new Date();
-      baseline.setHours(0, 0, 0, 0);
-      const baselineTime = baseline.getTime();
-      for (let j = 0; j < METRIC_COUNT; j++) {
-        // inserts for ±30 days; ensure there is enough data to work for demo if run a month into the future
-        let date = new Date(baselineTime - j * 3600 * 1000);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        date.setMilliseconds(0);
-        const minEnergyProduced =
-          energyRatios[i % energyRatios.length].produced.min;
-        const maxEnergyProduced =
-          energyRatios[i % energyRatios.length].produced.max;
-        const minEnergyConsumed =
-          energyRatios[i % energyRatios.length].consumed.min;
-        const maxEnergyConsumed =
-          energyRatios[i % energyRatios.length].consumed.max;
+      const records = []; // array to hold rows to insert
+      const ratio = energyRatios[i % energyRatios.length];
+      const { produced, consumed } = ratio;
 
-        await client.query(
-          `INSERT INTO metrics (system_id, datetime, energy_produced, energy_consumed) VALUES ($1, $2, $3, $4)`,
-          [
-            systemIds[i],
-            date,
-            faker.number.float({
-              min: minEnergyProduced,
-              max: maxEnergyProduced,
-              fractionDigits: 2,
-            }),
-            faker.number.float({
-              min: minEnergyConsumed,
-              max: maxEnergyConsumed,
-              fractionDigits: 2,
-            }),
-          ]
-        );
-        date = new Date(baselineTime + j * 3600 * 1000);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        date.setMilliseconds(0);
-        await client.query(
-          `INSERT INTO metrics (system_id, datetime, energy_produced, energy_consumed) VALUES ($1, $2, $3, $4)`,
-          [
-            systemIds[i],
-            date,
-            faker.number.float({
-              min: minEnergyProduced,
-              max: maxEnergyProduced,
-              fractionDigits: 2,
-            }),
-            faker.number.float({
-              min: minEnergyConsumed,
-              max: maxEnergyConsumed,
-              fractionDigits: 2,
-            }),
-          ]
-        );
+      // Loop over METRIC_COUNT hours for past and future
+      for (let j = 0; j < METRIC_COUNT; j++) {
+        // Past metric (j hours before baseline)
+        let pastDate = new Date(baselineTime - j * 3600 * 1000);
+        pastDate.setMinutes(0, 0, 0);
+
+        records.push([
+          systemIds[i],
+          pastDate,
+          faker.number.float({
+            min: produced.min,
+            max: produced.max,
+            fractionDigits: 2,
+          }),
+          faker.number.float({
+            min: consumed.min,
+            max: consumed.max,
+            fractionDigits: 2,
+          }),
+        ]);
+
+        // Future metric (j hours after baseline)
+        let futureDate = new Date(baselineTime + j * 3600 * 1000);
+        futureDate.setMinutes(0, 0, 0);
+
+        records.push([
+          systemIds[i],
+          futureDate,
+          faker.number.float({
+            min: produced.min,
+            max: produced.max,
+            fractionDigits: 2,
+          }),
+          faker.number.float({
+            min: consumed.min,
+            max: consumed.max,
+            fractionDigits: 2,
+          }),
+        ]);
       }
+
+      // Bulk insert records for the current system.
+      // We'll build a parameterized query dynamically.
+      let queryText = `INSERT INTO metrics (system_id, datetime, energy_produced, energy_consumed) VALUES `;
+      const values = [];
+      const placeholders = records.map((record, index) => {
+        const baseIndex = index * 4;
+        // For each record, we add 4 placeholders ($1, $2, $3, $4, etc.)
+        values.push(...record);
+        return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4})`;
+      });
+      queryText += placeholders.join(', ');
+
+      await client.query(queryText, values);
     }
 
     // Seed Products
