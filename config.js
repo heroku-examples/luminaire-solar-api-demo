@@ -7,7 +7,6 @@ export const config = {
   PORT: +process.env.PORT || 3000,
   PUBLIC_KEY: process.env.PUBLIC_KEY,
   PRIVATE_KEY: process.env.PRIVATE_KEY,
-  JWT_SECRET: process.env.JWT_SECRET,
   INFERENCE_KEY: process.env.INFERENCE_KEY,
   INFERENCE_MODEL_ID: process.env.INFERENCE_MODEL_ID,
   INFERENCE_URL: process.env.INFERENCE_URL,

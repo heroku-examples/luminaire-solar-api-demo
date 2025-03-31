@@ -10,6 +10,8 @@
 - [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
 - PostgreSQL [psql](https://www.postgresql.org/download/) client
 - Redis server (for chat memory)
+- [Heroku AI CLI](https://devcenter.heroku.com/articles/heroku-inference#install-the-cli-plugin)
+- Heroku Managed Inference and Agents [MIA](https://elements.heroku.com/addons/heroku-inference)
 
 ## Installation
 
@@ -43,7 +45,7 @@ Install the [Heroku PostgreSQL addon](https://elements.heroku.com/addons/heroku-
  heroku addons:create heroku-postgresql:essential-0
 ```
 
-Install the [Heroku Redis addon](https://elements.heroku.com/addons/heroku-redis):
+Install the [Heroku Key-Value Store addon](https://elements.heroku.com/addons/heroku-redis):
 
 ```sh
 heroku addons:create heroku-redis:mini
@@ -55,7 +57,16 @@ Once the PostgreSQL database is created, setup the database schema with:
 heroku pg:psql -f data/schema.sql
 ```
 
-Make sure to fetch the database configuration to your local project by running:
+Install the [Heroku Inference addon](https://elements.heroku.com/addons/heroku-inference)
+
+> [!NOTE]
+> Make sure the Heroku AI CLI plugin is installed with `heroku plugins:install @heroku/plugin-ai`
+
+```sh
+heroku ai:models:create claude-3-7-sonnet --as inference -a <app-name>
+```
+
+Make sure to fetch the configuration to your local project by running:
 
 ```sh
 heroku config --shell > .env
