@@ -54,7 +54,7 @@ heroku addons:create heroku-redis:mini
 Once the PostgreSQL database is created, setup the database schema with:
 
 ```sh
-heroku pg:psql -f data/schema.sql
+node data/migration.js
 ```
 
 Install the [Heroku Inference addon](https://elements.heroku.com/addons/heroku-inference)
