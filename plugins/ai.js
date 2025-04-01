@@ -161,6 +161,7 @@ The response must meet the following criteria:
               target_app_name: config.APP_NAME,
               tool_params: {
                 db_attachment: config.DATABASE_ATTACHMENT,
+                dyno_size: config.DYNO_SIZE,
               },
             },
           },
@@ -173,6 +174,7 @@ The response must meet the following criteria:
               target_app_name: config.APP_NAME,
               tool_params: {
                 db_attachment: config.DATABASE_ATTACHMENT,
+                dyno_size: config.DYNO_SIZE,
               },
             },
           },

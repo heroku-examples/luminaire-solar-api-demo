@@ -1,7 +1,8 @@
 export const config = {
-  APP_NAME: process.env.APP_NAME,
-  PYTHON_RUNNER: process.env.PYTHON_RUNNER,
-  DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT,
+  APP_NAME: process.env.APP_NAME, // The app name to use for the heroku tools
+  PYTHON_RUNNER: process.env.PYTHON_RUNNER, // The app name to use for the heroku tools python runner
+  DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT || 'DATABASE', // The name of the database attachment to use for the heroku tools
+  DYNO_SIZE: process.env.DYNO_SIZE || 'standard-1x', // The size of the dyno to use for the heroku tools
   DATABASE_URL: process.env.DATABASE_URL,
   REDIS_URL: process.env.REDIS_URL,
   PORT: +process.env.PORT || 3000,
