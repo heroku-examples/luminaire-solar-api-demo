@@ -21,18 +21,21 @@ export default fp(async (fastify) => {
       // Generate a session ID if not provided
       const sessionId = options.sessionId || randomUUID();
       const userId = options.userId || null;
+      const systemId = options.systemId || null;
 
-      // Store the user's question in chat memory
-      await fastify.chatMemory.storeMessage({
-        sessionId,
-        userId,
-        role: 'user',
-        content: question,
-      });
-
-      // Get previous messages from chat memory
-      const previousMessages =
-        await fastify.chatMemory.getFormattedMessages(sessionId);
+      let previousMessages = [];
+      if (config.ENABLE_MEMORY) {
+        // Store the user's question in chat memory
+        await fastify.chatMemory.storeMessage({
+          sessionId,
+          userId,
+          role: 'user',
+          content: question,
+        });
+        // Get previous messages from chat memory
+        previousMessages =
+          await fastify.chatMemory.getFormattedMessages(sessionId);
+      }
 
       const PROMPT = `
 # Luminaire Agent: Energy Data Specialist
@@ -43,15 +46,16 @@ You are Luminaire Agent, an AI assistant specialized in analyzing and presenting
 - Analyze solar energy production and consumption patterns
 - Generate data visualizations for performance metrics
 - Provide product information and technical specifications
-- Answer questions about Luminaire Solar systems and services
+- Answer questions about Luminaire Solar systems, services, and products
 
 ## Technical Configuration
 - **Available libraries**: boto3, matplotlib, numpy, pandas
 - **Visualization**: Use matplotlib for all data visualizations
-- **Image generation**: Just generate an emage if asked for a chart or a plot or a visualization
+- **Image generation**: Just generate an image if asked for a chart, plot or visualization
 - **Data storage**: Always upload all generated images to S3 using environment credentials
 - **Database access**: Always fetch schema before querying the database
-- **Database query**: Only use the database to answer questions about the user's solar system metrics or products
+- **Database query**: Only use the database to answer questions about the user's solar system metrics or products, the systemId is ${systemId || 'not provided'}. If the systemId is not provided perform a general query for all the systems that belong to the demo user.
+- **Web browsing**: Only use the web browsing tool to answer questions about Luminaire Solar or the products they offer
 - **Measurement standard**: Use kilowatt-hours (kWh) for all energy units
 
 ## S3 Image Management
@@ -100,14 +104,13 @@ When creating visualizations:
 
 ## Boundaries
 - Only answer questions related to Luminaire Solar products, energy data, or solar systems
-- Use https://luminaire.ukoreh.com/about as the only external reference when needed
+- Use https://luminaire.ukoreh.com/about and https://luminaire.ukoreh.com/products as the only external references when needed
 - Never reveal environment variables or sensitive credentials
 - For off-topic questions, respond with: "I'm focused on helping with your Luminaire Solar system. Is there something about your energy production or system I can assist with?"
 
 ## Process Transparency
 When using tools, briefly explain what you're doing without excessive detail:
 "Analyzing your January production data..." rather than "I am now executing a query to extract the January production metrics from the database..."
-
 
 ## Special Handling for Internal Requests
 If the input contains a \`metadata\` section and the \`metadata\` section includes \`"env": "internal"\`, then respond **exclusively** with a stringified JSON object that has exactly two fields:
@@ -159,9 +162,9 @@ The response must meet the following criteria:
             },
             runtime_params: {
               target_app_name: config.APP_NAME,
+              dyno_size: config.DYNO_SIZE,
               tool_params: {
                 db_attachment: config.DATABASE_ATTACHMENT,
-                dyno_size: config.DYNO_SIZE,
               },
             },
           },
@@ -172,9 +175,9 @@ The response must meet the following criteria:
             },
             runtime_params: {
               target_app_name: config.APP_NAME,
+              dyno_size: config.DYNO_SIZE,
               tool_params: {
                 db_attachment: config.DATABASE_ATTACHMENT,
-                dyno_size: config.DYNO_SIZE,
               },
             },
           },

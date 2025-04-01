@@ -68,13 +68,14 @@ export default async function (fastify, _opts) {
     },
     preHandler: fastify.auth([fastify.verifyJwt]),
     handler: async function (request, reply) {
-      const { question, sessionId = randomUUID() } = request.body;
+      const { question, sessionId = randomUUID(), systemId } = request.body;
       let isNewConversation = !request.body.sessionId;
 
       try {
         // Get the completion stream with memory
         const stream = await fastify.ai.executeCompletion(question, {
           sessionId,
+          systemId,
         });
 
         const jsonStream = Readable.from(stream, {
