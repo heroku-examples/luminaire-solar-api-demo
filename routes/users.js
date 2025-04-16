@@ -61,7 +61,12 @@ export default async function (fastify, _opts) {
       const user = await fastify.db.getUserByUsername(username);
       const authorization = await reply.jwtSign(
         { user },
-        { sub: user.username, kid: '12345', iss: 'testIssuer', expiresIn: '1d' }
+        {
+          sub: user.username,
+          kid: 'luminaire',
+          iss: 'luminaire',
+          expiresIn: '1d',
+        }
       );
       reply.send({
         authorization,
