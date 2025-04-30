@@ -42,19 +42,13 @@ heroku create <app-name>
 Install the [Heroku PostgreSQL addon](https://elements.heroku.com/addons/heroku-postgresql):
 
 ```sh
- heroku addons:create heroku-postgresql:essential-0
+ heroku addons:create heroku-postgresql:essential-0 --app <your-heroku-app-name>
 ```
 
 Install the [Heroku Key-Value Store addon](https://elements.heroku.com/addons/heroku-redis):
 
 ```sh
-heroku addons:create heroku-redis:mini
-```
-
-Once the PostgreSQL database is created, setup the database schema with:
-
-```sh
-node data/migration.js
+heroku addons:create heroku-redis:mini --app <your-heroku-app-name>
 ```
 
 Install the [Heroku Inference addon](https://elements.heroku.com/addons/heroku-inference)
@@ -63,16 +57,22 @@ Install the [Heroku Inference addon](https://elements.heroku.com/addons/heroku-i
 > Make sure the Heroku AI CLI plugin is installed with `heroku plugins:install @heroku/plugin-ai`
 
 ```sh
-heroku ai:models:create claude-3-7-sonnet --as inference -a <app-name>
+heroku ai:models:create claude-3-7-sonnet --as inference -a <your-heroku-app-name>
 ```
 
 Make sure to fetch the configuration to your local project by running:
 
 ```sh
-heroku config --shell > .env
+heroku config --shell --app <your-heroku-app-name> > .env
 ```
 
-Seed the database with mock data by running:
+Once the environment variables are set up, setup the database schema with:
+
+```sh
+node data/migration.js
+```
+
+Then seed the database with mock data by running:
 
 ```sh
 node data/seed.js
@@ -83,6 +83,45 @@ Run the project locally with:
 ```sh
 pnpm run dev
 ```
+
+## Local DB Setup
+
+Alternatively, you can use local dev databases:
+
+1. Install and start PostgreSQL locally
+
+   - Create a database for the application
+
+2. Install and start Redis locally
+
+   - Redis should be running on the default port (6379)
+
+3. Create a local `.env` file with your development settings:
+
+   ```sh
+   cp .env.sample .env
+   ```
+
+4. Update the `.env` file with your local database and Redis connection strings:
+
+   ```
+   DATABASE_URL=postgres://username:password@localhost:5432/yourdatabase
+   REDIS_URL=redis://localhost:6379
+   ```
+
+5. Generate JWT keys for authentication (as described in the Environment Variables section)
+
+6. Run the database migration and seed scripts:
+
+   ```sh
+   node data/migration.js
+   node data/seed.js
+   ```
+
+7. Start the development server:
+   ```sh
+   pnpm run dev
+   ```
 
 ## Environment Variables
 
