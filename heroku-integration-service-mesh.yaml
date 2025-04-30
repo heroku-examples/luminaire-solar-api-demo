@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ServiceMesh
+metadata:
+  name: luminaire-solar-api
+spec:
+  mesh:
+    authentication:
+      bypassRoutes:
+        # Salesforce routes that need to bypass AppLink
+        - path: /user
+          methods: [GET]
+        - path: /info
+          methods: [GET]
+        - path: /products
+          methods: [GET]
+        - path: /summary/:systemId
+          methods: [GET]
+        - path: /forecast/:systemId
+          methods: [GET]
+        - path: /handleDataCloudDataChangeEvent
+          methods: [POST]
+        - path: /healthcheck
+          methods: [GET]
+      # Note: Wildcards not supported before GA, only explicit paths included
