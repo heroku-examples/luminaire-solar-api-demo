@@ -38,15 +38,16 @@
     "@fastify/sensible": "^6.0.3",
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
+    "@heroku/salesforce-sdk-nodejs": "^0.3.4-ea",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "fastify-plugin": "^4.5.1",
-    "postgrator": "^8.0.0",
     "ioredis": "^5.6.0",
     "openai": "^4.86.2",
     "pg": "^8.13.3",
     "pino": "^9.6.0",
-    "pino-pretty": "^11.3.0"
+    "pino-pretty": "^11.3.0",
+    "postgrator": "^8.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
