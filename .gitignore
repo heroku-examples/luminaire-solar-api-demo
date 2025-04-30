@@ -61,5 +61,6 @@ profile-*
 
 # environment
 .env
+.env.local
 
 Client/dist
