@@ -94,6 +94,10 @@ export default fp(async (fastify) => {
         return rows;
       },
       getMetricsSummaryBySystem: async (systemId, date) => {
+        // TODO: Consolidate this with getMetricsSummaryBySystemDetailed into a single API
+        // that supports both formats (rolling windows vs calendar periods)
+        // and return options (aggregated vs grouped)
+
         // Daily
         const startDate = new Date(date);
         const startOfDay = new Date(startDate.setHours(0, 0, 0, 0));
@@ -147,6 +151,73 @@ export default fp(async (fastify) => {
           weekly: weeklyRows[0],
           monthly: monthlyRows[0],
         };
+      },
+
+      // Function added from agentforce repository to maintain compatibility
+      // Returns full result rows with date information and uses calendar-based date calculations
+      getMetricsSummaryBySystemDetailed: async (systemId, date) => {
+        // TODO: Consolidate this with getMetricsSummaryBySystem into a unified API
+        // that supports both formats (rolling windows vs calendar periods)
+        // and return options (aggregated vs grouped)
+
+        // Daily
+        const startDate = new Date(date);
+        const startOfDay = new Date(startDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(startDate.setHours(23, 59, 59, 999));
+
+        // Daily
+        const { rows: dailyRows } = await client.query(
+          `SELECT date_trunc('day', datetime) as date, 
+            SUM(energy_produced) as total_energy_produced, 
+            SUM(energy_consumed) as total_energy_consumed 
+        FROM metrics 
+        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+        GROUP BY date_trunc('day', datetime)
+        ORDER BY date_trunc('day', datetime) DESC`,
+          [systemId, startOfDay, endOfDay]
+        );
+
+        // Weekly - Calendar week (different from the original api-demo implementation)
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const { rows: weeklyRows } = await client.query(
+          `SELECT date_trunc('week', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+        FROM metrics 
+        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+        GROUP BY date_trunc('week', datetime)
+        ORDER BY date_trunc('week', datetime) DESC`,
+          [systemId, startOfWeek, endOfWeek]
+        );
+
+        // Monthly - Calendar month
+        const startOfMonth = new Date(date);
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const endOfMonth = new Date(startOfMonth);
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        const { rows: monthlyRows } = await client.query(
+          `SELECT date_trunc('month', datetime) as date, 
+          SUM(energy_produced) as total_energy_produced, 
+          SUM(energy_consumed) as total_energy_consumed 
+        FROM metrics 
+        WHERE system_id = $1 AND datetime >= $2 AND datetime <= $3
+        GROUP BY date_trunc('month', datetime)
+        ORDER BY date_trunc('month', datetime) DESC`,
+          [systemId, startOfMonth, endOfMonth]
+        );
+        return { daily: dailyRows, weekly: weeklyRows, monthly: monthlyRows };
       },
       getProducts: async () => {
         const { rows } = await client.query(
