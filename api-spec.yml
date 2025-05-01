@@ -929,6 +929,108 @@ paths:
                   profile information (excluding sensitive data like password)
                   to confirm the account creation.
                 $ref: '#/components/schemas/user'
+  /salesforce/user:
+    get:
+      operationId: getSalesforceUser
+      tags:
+        - salesforce
+      description: Get user information from Salesforce
+      responses:
+        '200':
+          description: Successfully retrieved user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+
+  /salesforce/info:
+    get:
+      operationId: getSalesforceInfo
+      tags:
+        - salesforce
+      description: Get company information from Salesforce
+      responses:
+        '200':
+          description: Successfully retrieved company information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  description:
+                    type: string
+                    description: Company description
+                  mission:
+                    type: string
+                    description: Company mission statement
+
+  /salesforce/products:
+    get:
+      operationId: getSalesforceProducts
+      tags:
+        - salesforce
+      description: Get product catalog from Salesforce
+      responses:
+        '200':
+          description: Successfully retrieved product catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/product'
+
+  /salesforce/summary/{systemId}:
+    get:
+      operationId: getSalesforceSummary
+      tags:
+        - salesforce
+      description: Get energy metrics summary for a system from Salesforce
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+          description: Unique identifier of the solar system
+        - schema:
+            type: string
+            format: date
+          in: query
+          name: date
+          required: false
+          description: Reference date (YYYY-MM-DD format) for the summary
+      responses:
+        '200':
+          description: Successfully retrieved energy metrics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/summary'
+
+  /salesforce/forecast/{systemId}:
+    get:
+      operationId: getSalesforceForecast
+      tags:
+        - salesforce
+      description: Get energy forecast for a system from Salesforce
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+          description: Unique identifier of the solar system
+      responses:
+        '200':
+          description: Successfully retrieved energy forecast
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/forecast'
+
   /api/webhook:
     post:
       operationId: receiveWebhook
