@@ -7,7 +7,7 @@ export default async function (fastify, _opts) {
    * Mock endpoint to get user info
    */
   fastify.get(
-    '/user',
+    '/salesforce/user',
     {
       config: {
         salesforce: {
@@ -31,7 +31,7 @@ export default async function (fastify, _opts) {
     },
     async function (request, _reply) {
       const { logger } = request.sdk;
-      logger.info('GET /user');
+      logger.info('GET /salesforce/user');
       return {
         id: 'user_id_1',
         name: 'user_name_1',
@@ -43,7 +43,7 @@ export default async function (fastify, _opts) {
    * Endpoint to return company information
    */
   fastify.get(
-    '/info',
+    '/salesforce/info',
     {
       config: {
         salesforce: {
@@ -67,7 +67,7 @@ export default async function (fastify, _opts) {
     },
     async function (request, _reply) {
       const { logger } = request.sdk;
-      logger.info(`GET /info`);
+      logger.info(`GET /salesforce/info`);
       return {
         description: `
       Luminaire Solar is a leading provider of sustainable energy solutions,
@@ -97,7 +97,7 @@ export default async function (fastify, _opts) {
    * Note: This endpoint uses the database function already consolidated in Phase 2
    */
   fastify.get(
-    '/products',
+    '/salesforce/products',
     {
       config: {
         salesforce: {
@@ -163,7 +163,7 @@ export default async function (fastify, _opts) {
    * Get metrics summary by system
    */
   fastify.get(
-    '/summary/:systemId',
+    '/salesforce/summary/:systemId',
     {
       config: {
         salesforce: {
@@ -203,7 +203,7 @@ export default async function (fastify, _opts) {
       const { logger } = request.sdk;
       const { systemId } = request.params;
 
-      logger.info(`GET /summary/${systemId}`);
+      logger.info(`GET /salesforce/summary/${systemId}`);
       const date = request.query.date || new Date().toISOString();
 
       // Use the getMetricsSummaryBySystem function from consolidated DB plugin
@@ -255,7 +255,7 @@ export default async function (fastify, _opts) {
    * Get energy forecast by system
    */
   fastify.get(
-    '/forecast/:systemId',
+    '/salesforce/forecast/:systemId',
     {
       config: {
         salesforce: {
@@ -330,67 +330,6 @@ export default async function (fastify, _opts) {
       ]
     }
     */
-    }
-  );
-
-  /**
-   * Handle Data Cloud data change event
-   */
-  fastify.post(
-    '/handleDataCloudDataChangeEvent',
-    {
-      config: {
-        salesforce: {
-          parseRequest: false, // Parsing is specific to External Service requests
-          skipAuth: true, // This endpoint is called by Salesforce and doesn't use our JWT authentication
-        },
-      },
-      schema: {
-        description: 'Handle Data Cloud data change events',
-        tags: ['salesforce'],
-      },
-    },
-    async function (request, reply) {
-      const logger = request.log;
-      const dataCloud = request.sdk.dataCloud;
-
-      if (!request.body) {
-        logger.warn('Empty body, no events found');
-        return reply.code(400).send();
-      }
-
-      const actionEvent = dataCloud.parseDataActionEvent(request.body);
-      logger.info(
-        `POST /dataCloudDataChangeEvent: ${actionEvent.count} events for schemas ${Array.isArray(actionEvent.schemas) && actionEvent.schemas.length > 0 ? actionEvent.schemas.map((s) => s.schemaId).join() : 'n/a'}`
-      );
-
-      // Loop through event data
-      actionEvent.events.forEach((evt) => {
-        logger.info(
-          `Got action '${evt.ActionDeveloperName}', event type '${evt.EventType}' triggered by ${evt.EventPrompt} on object '${evt.SourceObjectDeveloperName}' published on ${evt.EventPublishDateTime}`
-        );
-        // Handle changed object values via evt.PayloadCurrentValue
-      });
-
-      // If config vars are set, query Data Cloud org
-      if (process.env.DATA_CLOUD_ORG && process.env.DATA_CLOUD_QUERY) {
-        const orgName = process.env.DATA_CLOUD_ORG;
-        const query = process.env.DATA_CLOUD_QUERY;
-        const herokuIntegration = request.sdk.addons.herokuIntegration;
-
-        // Get DataCloud org connection from add-on
-        logger.info(
-          `Getting '${orgName}' org connection from Heroku Integration add-on...`
-        );
-        const org = await herokuIntegration.getConnection(orgName);
-
-        // Query DataCloud org
-        logger.info(`Querying org ${org.id}: ${query}`);
-        const response = await org.dataCloudApi.query(query);
-        logger.info(`Query response: ${JSON.stringify(response.data || {})}`);
-      }
-
-      reply.code(201).send();
     }
   );
 }
