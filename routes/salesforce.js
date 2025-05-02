@@ -11,7 +11,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          parseRequest: true,
+          parseRequest: false, // Not coming through AppLink in demo mode
           skipAuth: true, // For demo purposes, real implementation should use proper auth
         },
       },
@@ -47,7 +47,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          parseRequest: true,
+          parseRequest: false, // Not coming through AppLink in demo mode
           skipAuth: true, // For demo purposes
         },
       },
@@ -101,7 +101,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          parseRequest: true,
+          parseRequest: false, // Not coming through AppLink in demo mode
           skipAuth: true, // For demo purposes
         },
       },
@@ -167,7 +167,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          parseRequest: true,
+          parseRequest: false, // Not coming through AppLink in demo mode
           skipAuth: true, // For demo purposes
         },
       },
@@ -259,7 +259,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          parseRequest: true,
+          parseRequest: false, // Not coming through AppLink in demo mode
           skipAuth: true, // For demo purposes
         },
       },
