@@ -6,7 +6,7 @@ export const config = {
   DATABASE_URL: process.env.DATABASE_URL,
   ENABLE_MEMORY: process.env.ENABLE_MEMORY || false,
   REDIS_URL: process.env.REDIS_URL,
-  PORT: +process.env.PORT || 3000,
+  PORT: +process.env.APP_PORT || 3000,
   PUBLIC_KEY: process.env.PUBLIC_KEY,
   PRIVATE_KEY: process.env.PRIVATE_KEY,
   INFERENCE_KEY: process.env.INFERENCE_KEY,

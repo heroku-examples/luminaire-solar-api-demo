@@ -7,7 +7,7 @@ export default async function (fastify, _opts) {
    * Mock endpoint to get user info
    */
   fastify.get(
-    '/api/salesforce/user',
+    '/salesforce/user',
     {
       config: {
         salesforce: {
@@ -32,7 +32,7 @@ export default async function (fastify, _opts) {
     async function (request, _reply) {
       console.log('REQUEST: ', request);
       // const { logger } = request.sdk;
-      // logger.info('GET /api/salesforce/user');
+      // logger.info('GET /salesforce/user');
       return {
         id: 'user_id_1',
         name: 'user_name_1',
@@ -44,7 +44,7 @@ export default async function (fastify, _opts) {
    * Endpoint to return company information
    */
   fastify.get(
-    '/api/salesforce/info',
+    '/salesforce/info',
     {
       config: {
         salesforce: {
@@ -68,7 +68,7 @@ export default async function (fastify, _opts) {
     },
     async function (request, _reply) {
       const { logger } = request.sdk;
-      logger.info(`GET /api/salesforce/info`);
+      logger.info(`GET /salesforce/info`);
       return {
         description: `
       Luminaire Solar is a leading provider of sustainable energy solutions,
@@ -98,7 +98,7 @@ export default async function (fastify, _opts) {
    * Note: This endpoint uses the database function already consolidated in Phase 2
    */
   fastify.get(
-    '/api/salesforce/products',
+    '/salesforce/products',
     {
       config: {
         salesforce: {
@@ -164,7 +164,7 @@ export default async function (fastify, _opts) {
    * Get metrics summary by system
    */
   fastify.get(
-    '/api/salesforce/summary/:systemId',
+    '/salesforce/summary/:systemId',
     {
       config: {
         salesforce: {
@@ -204,7 +204,7 @@ export default async function (fastify, _opts) {
       const { logger } = request.sdk;
       const { systemId } = request.params;
 
-      logger.info(`GET /api/salesforce/summary/${systemId}`);
+      logger.info(`GET /salesforce/summary/${systemId}`);
       const date = request.query.date || new Date().toISOString();
 
       // Use the getMetricsSummaryBySystem function from consolidated DB plugin
@@ -256,7 +256,7 @@ export default async function (fastify, _opts) {
    * Get energy forecast by system
    */
   fastify.get(
-    '/api/salesforce/forecast/:systemId',
+    '/salesforce/forecast/:systemId',
     {
       config: {
         salesforce: {

@@ -929,7 +929,7 @@ paths:
                   profile information (excluding sensitive data like password)
                   to confirm the account creation.
                 $ref: '#/components/schemas/user'
-  /salesforce/user:
+  /api/salesforce/user:
     get:
       operationId: getSalesforceUser
       tags:
@@ -943,7 +943,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/user'
 
-  /salesforce/info:
+  /api/salesforce/info:
     get:
       operationId: getSalesforceInfo
       tags:
@@ -964,7 +964,7 @@ paths:
                     type: string
                     description: Company mission statement
 
-  /salesforce/products:
+  /api/salesforce/products:
     get:
       operationId: getSalesforceProducts
       tags:
@@ -980,7 +980,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/product'
 
-  /salesforce/summary/{systemId}:
+  /api/salesforce/summary/{systemId}:
     get:
       operationId: getSalesforceSummary
       tags:
@@ -1008,7 +1008,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/summary'
 
-  /salesforce/forecast/{systemId}:
+  /api/salesforce/forecast/{systemId}:
     get:
       operationId: getSalesforceForecast
       tags:
