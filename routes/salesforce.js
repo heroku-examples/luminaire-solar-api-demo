@@ -30,6 +30,7 @@ export default async function (fastify, _opts) {
       },
     },
     async function (request, _reply) {
+      console.log('REQUEST: ', request);
       // const { logger } = request.sdk;
       // logger.info('GET /api/salesforce/user');
       return {
