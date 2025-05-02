@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Luminaire Solar API
+  description: Provides access to the Luminaire Solar API
+  version: "1.0"
+components:
+  schemas: {}
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+tags:
+  - name: Pricing Engine
+    description: Quote generation endpoints  
+paths:
+  /api/salesforce/user:
+    get:
+      tags:
+        - salesforce
+      description: Get user information
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+  /api/salesforce/info:
+    get:
+      tags:
+        - salesforce
+      description: Get company information
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  description:
+                    type: string
+                  services:
+                    type: string
+  /api/salesforce/products:
+    get:
+      tags:
+        - salesforce
+      description: Get product catalog
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: string
+  /api/salesforce/summary/{systemId}:
+    get:
+      tags:
+        - salesforce
+      description: Get metrics summary by system
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: date
+          required: false
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  daily:
+                    type: string
+                  weekly:
+                    type: string
+                  monthly:
+                    type: string
+  /api/salesforce/forecast/{systemId}:
+    get:
+      tags:
+        - salesforce
+      description: Get energy forecast by system
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: date
+          required: false
+        - schema:
+            type: string
+          in: path
+          name: systemId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  forecast:
+                    type: string
