@@ -24,7 +24,7 @@ export default fp(async (fastify) => {
       const systemId = options.systemId || null;
 
       let previousMessages = [];
-      if (config.ENABLE_MEMORY) {
+      if (fastify.chatMemory) {
         // Store the user's question in chat memory
         await fastify.chatMemory.storeMessage({
           sessionId,

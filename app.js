@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import path from 'node:path';
 import Fastify from 'fastify';
 import FastifyJwt from '@fastify/jwt';
 import FastifyCors from '@fastify/cors';
@@ -7,10 +6,17 @@ import FastifyAuth from '@fastify/auth';
 import FastifyPostgres from '@fastify/postgres';
 import FastifyFormBody from '@fastify/formbody';
 import FastifyRedis from '@fastify/redis';
-import AutoLoad from '@fastify/autoload';
 import Swagger from '@fastify/swagger';
 import SwaggerUI from '@fastify/swagger-ui';
 import { config } from './config.js';
+import chatMemory from './plugins/chat-memory.js';
+import miaPlugin from './plugins/mia.js';
+import dbPlugin from './plugins/db.js';
+import chatRoutes from './routes/chat.js';
+import usersRoutes from './routes/users.js';
+import productsRoutes from './routes/products.js';
+import metricsRoutes from './routes/metrics.js';
+import webhooksRoutes from './routes/webhooks.js';
 
 export async function build(opts = {}) {
   // Create Fastify instance with merged options
@@ -21,8 +27,7 @@ export async function build(opts = {}) {
     ...opts,
   });
 
-  // Register plugins - in Fastify 5, we don't need to await each registration
-  // as fastify.register returns the fastify instance
+  // Register plugins
   fastify.register(FastifyFormBody);
 
   fastify.register(FastifyCors, (_instance) => {
@@ -41,6 +46,41 @@ export async function build(opts = {}) {
       callback(null, corsOptions);
     };
   });
+
+  fastify.register(FastifyJwt, {
+    secret: {
+      private: config.PRIVATE_KEY,
+      public: config.PUBLIC_KEY,
+    },
+    sign: { algorithm: 'RS256' },
+  });
+
+  // Decorators for authentication
+  fastify.decorate('verifyUserAndPassword', async function (request, reply) {
+    try {
+      const { username, password } = request.body;
+      const isAuthenticated = await fastify.db.authenticate(username, password);
+      if (!isAuthenticated) {
+        throw new Error('Invalid credentials');
+      }
+    } catch (err) {
+      reply
+        .code(401)
+        .send({ error: 'Authentication failed', message: err.message });
+    }
+  });
+
+  fastify.decorate('verifyJwt', async function (request, reply) {
+    try {
+      await request.jwtVerify();
+    } catch (err) {
+      reply
+        .code(401)
+        .send({ error: 'JWT verification failed', message: err.message });
+    }
+  });
+
+  fastify.register(FastifyAuth);
 
   fastify.register(Swagger, {
     openapi: {
@@ -87,66 +127,34 @@ export async function build(opts = {}) {
     },
   });
 
-  fastify.register(FastifyRedis, {
-    url: config.REDIS_URL,
-    closeClient: true,
-    maxRetriesPerRequest: 3,
-    enableReadyCheck: true,
-    connectTimeout: 10000,
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  // This loads all plugins defined in plugins
-  // those should be support plugins that are reused
-  // through your application
-  fastify.register(AutoLoad, {
-    dir: path.join(import.meta.dirname, 'plugins'),
-  });
-
-  fastify.register(FastifyJwt, {
-    secret: {
-      private: config.PRIVATE_KEY,
-      public: config.PUBLIC_KEY,
-    },
-    sign: { algorithm: 'RS256' },
-  });
-
-  // Decorators for authentication
-  fastify.decorate('verifyUserAndPassword', async function (request, reply) {
-    try {
-      const { username, password } = request.body;
-      const isAuthenticated = await fastify.db.authenticate(username, password);
-      if (!isAuthenticated) {
-        throw new Error('Invalid credentials');
-      }
-    } catch (err) {
-      reply
-        .code(401)
-        .send({ error: 'Authentication failed', message: err.message });
+  if (config.AI_ENGINE === 'mia') {
+    if (config.ENABLE_MEMORY) {
+      fastify.register(FastifyRedis, {
+        url: config.REDIS_URL,
+        closeClient: true,
+        maxRetriesPerRequest: 3,
+        enableReadyCheck: true,
+        connectTimeout: 10000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+      fastify.register(chatMemory);
     }
-  });
 
-  fastify.decorate('verifyJwt', async function (request, reply) {
-    try {
-      await request.jwtVerify();
-    } catch (err) {
-      reply
-        .code(401)
-        .send({ error: 'JWT verification failed', message: err.message });
-    }
-  });
+    fastify.register(miaPlugin);
+    // Register Chat Completion Routes
+    fastify.register(chatRoutes, { prefix: '/api' });
+  } else if (config.AI_ENGINE === 'agentforce') {
+    // Register Agentforce plugin and routes
+  }
 
-  fastify.register(FastifyAuth);
+  fastify.register(dbPlugin);
 
-  // This loads all plugins defined in routes
-  fastify.register(AutoLoad, {
-    dir: path.join(import.meta.dirname, 'routes'),
-    options: {
-      prefix: '/api',
-    },
-  });
+  fastify.register(usersRoutes, { prefix: '/api' });
+  fastify.register(productsRoutes, { prefix: '/api' });
+  fastify.register(metricsRoutes, { prefix: '/api' });
+  fastify.register(webhooksRoutes, { prefix: '/api' });
 
   fastify.get('/', async (_request, reply) => {
     return reply.redirect('/api-docs');

@@ -29,7 +29,6 @@
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@faker-js/faker": "^8.4.1",
     "@fastify/auth": "^5.0.2",
-    "@fastify/autoload": "^5.10.0",
     "@fastify/cors": "^10.1.0",
     "@fastify/formbody": "^8.0.2",
     "@fastify/jwt": "^9.0.4",
