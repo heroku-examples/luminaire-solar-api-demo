@@ -6,7 +6,6 @@ spec:
   mesh:
     authentication:
       bypassRoutes:
-        # Original routes (kept for backward compatibility)
         - path: /user
           methods: [GET]
         - path: /info
@@ -19,22 +18,6 @@ spec:
           methods: [GET]
         - path: /healthcheck
           methods: [GET]
-          
-        # API-prefixed original routes
-        - path: /api/user
-          methods: [GET]
-        - path: /api/info
-          methods: [GET]
-        - path: /api/products
-          methods: [GET]
-        - path: /api/summary/:systemId
-          methods: [GET]
-        - path: /api/forecast/:systemId
-          methods: [GET]
-        - path: /api/healthcheck
-          methods: [GET]
-          
-        # New Salesforce routes with API prefix
         - path: /api/salesforce/user
           methods: [GET]
         - path: /api/salesforce/info
@@ -45,11 +28,4 @@ spec:
           methods: [GET]
         - path: /api/salesforce/forecast/:systemId
           methods: [GET]
-          
-        # Standard API product routes
-        - path: /api/products
-          methods: [GET]
-        - path: /api/products/:id
-          methods: [GET]
-          
       # Note: Wildcards not supported before GA, only explicit paths included
