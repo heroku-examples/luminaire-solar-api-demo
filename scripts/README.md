@@ -39,7 +39,7 @@ Before using the script, you need to:
 ### Usage
 
 ```bash
-./invoke.sh <salesforce-org-alias> <api-url> [payload-json] [http-method] [session-based-permission-set]
+./invoke.sh <salesforce-org-alias> <api-url> [payload-json] [http-method] [session-based-permission-set] [--auth [token|file]]
 ```
 
 Parameters:
@@ -50,6 +50,13 @@ Parameters:
 - `http-method`: HTTP method to use (GET or POST) - defaults to GET
 - `session-based-permission-set`: [Advanced] Optional Salesforce permission set to activate for this request
 
+Authentication Options:
+
+- `--auth`: Include JWT authentication with the request
+  - `--auth` (no argument): Automatically use the `.jwt-token` file in the current directory
+  - `--auth <file>`: Use JWT token from the specified file
+  - `--auth "<token>"`: Use the provided JWT token directly
+
 ### Examples
 
 1. Test a GET endpoint:
@@ -59,8 +66,37 @@ Parameters:
    ```
 
 2. Test a POST endpoint with a payload:
+
    ```bash
    ./invoke.sh my-org http://localhost:3000/salesforce/user '{"userId": "123"}' POST
+   ```
+
+3. Test a GET endpoint with JWT authentication (using default `.jwt-token` file):
+
+   ```bash
+   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth
+   ```
+
+4. Test a GET endpoint with JWT authentication (using a specific token file):
+
+   ```bash
+   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth my-token.txt
+   ```
+
+5. Test a POST endpoint with JWT authentication:
+
+   ```bash
+   ./invoke.sh my-org http://localhost:3000/salesforce/user '{"userId": "123"}' POST --auth
+   ```
+
+6. Use with the `get-jwt.sh` script:
+
+   ```bash
+   # First, get a JWT token
+   ./get-jwt.sh http://localhost:3000/api/user/authenticate demo demo
+
+   # Then use it with invoke.sh
+   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth
    ```
 
 ### How It Works
@@ -68,11 +104,20 @@ Parameters:
 The script:
 
 1. Fetches your Salesforce org details using the Salesforce CLI
-2. Constructs the `x-client-context` header with proper authentication and context information
-3. Makes the API request with the constructed header
-4. Displays the response and HTTP status code
+2. Constructs the `x-client-context` header with necessary context information for the Salesforce SDK
+3. If the `--auth` flag is used, includes a JWT token in the `Authorization` header for authentication
+4. Makes the API request with all the required headers
+5. Displays the response and HTTP status code
 
-This is particularly useful during development when AppLink is not available to automatically provide the context header.
+The script handles two different mechanisms:
+
+- **Salesforce Context Header**: Required metadata for Salesforce SDK endpoints (always included)
+- **JWT Authentication**: Added with the `--auth` flag for endpoints that require API authentication
+
+This capability is particularly useful for:
+
+- Testing routes that require both the context header and authentication
+- Developing and testing in environments where AppLink is not available to automatically provide the context header
 
 ## get-jwt.sh
 

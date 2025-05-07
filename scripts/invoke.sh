@@ -1,10 +1,57 @@
 #!/bin/bash
 
-# Check if at least three arguments are provided
+# Initialize variables
+USE_JWT=false
+JWT_TOKEN=""
+SESSION_PERMISSION_SET=""
+
+# Parse command-line arguments including --auth flag
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --auth)
+      USE_JWT=true
+      if [[ -n "$2" && "${2:0:1}" != "-" ]]; then
+        # Check if the token is provided as a file or a direct token
+        if [[ -f "$2" ]]; then
+          JWT_TOKEN=$(cat "$2")
+          echo "Using JWT token from file: $2"
+        else
+          JWT_TOKEN="$2"
+          echo "Using provided JWT token"
+        fi
+        shift # Remove the token/file value
+      else
+        # No argument provided, try to use default .jwt-token file
+        if [[ -f ".jwt-token" ]]; then
+          JWT_TOKEN=$(cat ".jwt-token")
+          echo "Using JWT token from default .jwt-token file"
+        else
+          echo "Error: No JWT token provided and no .jwt-token file found in current directory"
+          exit 1
+        fi
+      fi
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # Save positional argument
+      ;;
+  esac
+  shift # Move to the next argument
+done
+
+# Restore positional parameters
+set -- "${POSITIONAL_ARGS[@]}"
+
+# Check if at least two arguments are provided
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 <salesforce-org-alias> <api-url> [payload-json] [http-method] [session-based-permission-set]"
+    echo "Usage: $0 <salesforce-org-alias> <api-url> [payload-json] [http-method] [session-based-permission-set] [--auth [token|file]]"
     echo "  - payload-json: Required for POST/PUT/PATCH, can be empty '{}' for GET/DELETE"
-    echo "  - http-method: HTTP method (GET, POST, PUT, etc.) - defaults to POST if not provided"
+    echo "  - http-method: HTTP method (GET or POST) - defaults to GET"
+    echo "  - session-based-permission-set: Optional Salesforce permission set"
+    echo "  - --auth: Optional flag to include JWT authentication"
+    echo "      --auth (no value): Automatically use .jwt-token file in current directory"
+    echo "      --auth <file>: Use JWT token from the specified file"
+    echo "      --auth \"<token>\": Use the provided JWT token directly"
     exit 1
 fi
 
@@ -13,7 +60,7 @@ SF_ORG_ALIAS="$1"
 API_URL="$2"
 PAYLOAD_JSON="${3:-"{}"}"  # Default to empty JSON object if not provided
 HTTP_METHOD="${4:-"GET"}"  # Default to GET if not provided
-SESSION_PERMISSION_SET="$5"  # Optional
+SESSION_PERMISSION_SET="${5}"  # Optional
 
 # Fetch Salesforce org details using the Salesforce CLI
 SF_ORG_INFO=$(sf org display -o "$SF_ORG_ALIAS" --json 2>/dev/null)
@@ -90,18 +137,37 @@ ENCODED_CLIENT_CONTEXT=$(echo -n "$CLIENT_CONTEXT_JSON" | base64)
 # Make the request
 echo "$API_URL"
 
-# Build the curl command based on HTTP method
+# Build the curl command based on HTTP method and authentication
 if [[ "$HTTP_METHOD" == "GET" ]]; then
   # For GET requests, don't include the data payload
-  RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X GET "$API_URL" \
-    -H "Content-Type: application/json" \
-    -H "x-client-context: $ENCODED_CLIENT_CONTEXT")
+  if [[ "$USE_JWT" == true ]]; then
+    # With JWT authentication
+    RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X GET "$API_URL" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $JWT_TOKEN" \
+      -H "x-client-context: $ENCODED_CLIENT_CONTEXT")
+  else
+    # Without JWT authentication
+    RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X GET "$API_URL" \
+      -H "Content-Type: application/json" \
+      -H "x-client-context: $ENCODED_CLIENT_CONTEXT")
+  fi
 else
-  # For POST requests, include the payload
-  RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X "$HTTP_METHOD" "$API_URL" \
-    -H "Content-Type: application/json" \
-    -H "x-client-context: $ENCODED_CLIENT_CONTEXT" \
-    -d "$PAYLOAD_JSON")
+  # For POST and other methods, include the payload
+  if [[ "$USE_JWT" == true ]]; then
+    # With JWT authentication
+    RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X "$HTTP_METHOD" "$API_URL" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $JWT_TOKEN" \
+      -H "x-client-context: $ENCODED_CLIENT_CONTEXT" \
+      -d "$PAYLOAD_JSON")
+  else
+    # Without JWT authentication
+    RESPONSE=$(curl -s -w "\nHTTP Status: %{http_code}\n" -X "$HTTP_METHOD" "$API_URL" \
+      -H "Content-Type: application/json" \
+      -H "x-client-context: $ENCODED_CLIENT_CONTEXT" \
+      -d "$PAYLOAD_JSON")
+  fi
 fi
 
 # Print response
