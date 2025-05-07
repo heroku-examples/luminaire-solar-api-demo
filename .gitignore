@@ -64,3 +64,5 @@ profile-*
 .env.local
 
 Client/dist
+
+.jwt-token

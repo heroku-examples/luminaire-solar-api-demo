@@ -73,3 +73,51 @@ The script:
 4. Displays the response and HTTP status code
 
 This is particularly useful during development when AppLink is not available to automatically provide the context header.
+
+## get-jwt.sh
+
+The `get-jwt.sh` script is a companion utility that helps obtain a JWT authentication token for API requests that require standard JWT authentication (rather than the Salesforce context header).
+
+### Purpose
+
+The script helps with:
+
+- Obtaining a JWT token from the authentication endpoint
+- Testing user authentication credentials
+- Saving the token for use with other API requests
+
+### Usage
+
+```bash
+./get-jwt.sh <auth-url> <username> <password>
+```
+
+Parameters:
+
+- `auth-url`: The authentication endpoint URL (e.g., http://localhost:3000/api/user/authenticate)
+- `username`: The username for authentication
+- `password`: The password for authentication
+
+### Examples
+
+1. Get a JWT token for local development:
+
+   ```bash
+   ./get-jwt.sh http://localhost:3000/api/user/authenticate demo demo
+   ```
+
+2. Get a JWT token for production:
+   ```bash
+   ./get-jwt.sh https://your-app.herokuapp.com/api/user/authenticate demo demo
+   ```
+
+### How It Works
+
+The script:
+
+1. Makes a POST request to the authentication endpoint with the provided credentials
+2. Extracts the JWT token from the response
+3. Saves the token to a file named `.jwt-token` in the current directory
+4. Outputs the token to the console
+
+The saved token can then be used for API requests that require JWT authentication by including it in the Authorization header.
