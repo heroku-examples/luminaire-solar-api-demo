@@ -1,31 +1,16 @@
-apiVersion: v1
-kind: ServiceMesh
-metadata:
-  name: luminaire-solar-api
-spec:
-  mesh:
-    authentication:
-      bypassRoutes:
-        - path: /user
-          methods: [GET]
-        - path: /info
-          methods: [GET]
-        - path: /products
-          methods: [GET]
-        - path: /summary/:systemId
-          methods: [GET]
-        - path: /forecast/:systemId
-          methods: [GET]
-        - path: /healthcheck
-          methods: [GET]
-        - path: /api/salesforce/user
-          methods: [GET]
-        - path: /api/salesforce/info
-          methods: [GET]
-        - path: /api/salesforce/products
-          methods: [GET]
-        - path: /api/salesforce/summary/:systemId
-          methods: [GET]
-        - path: /api/salesforce/forecast/:systemId
-          methods: [GET]
-      # Note: Wildcards not supported before GA, only explicit paths included
+mesh:
+  authentication:
+    bypassRoutes:
+      - /user
+      - /info
+      - /products
+      - /summary/:systemId
+      - /forecast/:systemId
+      - /healthcheck
+      - /api/salesforce/user
+      - /api/salesforce/info
+      - /api/salesforce/products
+      - /api/salesforce/summary/:systemId
+      - /api/salesforce/forecast/:systemId
+      - /api/products
+      - /api/products/:id
