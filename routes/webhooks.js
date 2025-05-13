@@ -31,7 +31,7 @@ export default async function (fastify, _opts) {
     async function (request, reply) {
       const payload = request.body;
       fastify.log.info(payload);
-      reply.send({ status: 'success' });
+      return reply.send({ status: 'success' });
     }
   );
 
@@ -66,7 +66,7 @@ export default async function (fastify, _opts) {
     async function (request, reply) {
       const payload = request.body;
       fastify.log.info(payload);
-      reply.send({ status: 'success' });
+      return reply.send({ status: 'success' });
     }
   );
 }

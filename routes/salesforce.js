@@ -11,31 +11,42 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          skipAuth: true, // For demo purposes, real implementation should use proper auth
+          skipAuth: false, // This requires JWT authentication
         },
       },
       schema: {
-        description: 'Get user information',
+        description: 'Get authenticated user information',
         tags: ['salesforce'],
         response: {
           200: {
             type: 'object',
             properties: {
               id: { type: 'string' },
+              sf_org_id: { type: 'string' },
+              sf_user_id: { type: 'string' },
               name: { type: 'string' },
+              last_name: { type: 'string' },
+              username: { type: 'string' },
+              email: { type: 'string' },
             },
           },
         },
       },
     },
-    async function (request, _reply) {
-      console.log('REQUEST: ', request);
-      // const { logger } = request.sdk;
-      // logger.info('GET /salesforce/user');
-      return {
-        id: 'user_id_1',
-        name: 'user_name_1',
-      };
+    async function (request, reply) {
+      if (request.user && request.user.user) {
+        return reply.send(request.user.user);
+      }
+
+      return reply.send({
+        id: 'unauthorized',
+        name: 'Not Authenticated',
+        sf_org_id: null,
+        sf_user_id: null,
+        last_name: '',
+        username: '',
+        email: '',
+      });
     }
   );
 
@@ -64,10 +75,10 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    async function (request, _reply) {
+    async function (request, reply) {
       const { logger } = request.sdk;
       logger.info(`GET /salesforce/info`);
-      return {
+      return reply.send({
         description: `
       Luminaire Solar is a leading provider of sustainable energy solutions,
       offering a wide range of services for commercial, residential, and
@@ -87,7 +98,7 @@ export default async function (fastify, _opts) {
             description: 'Implementing large-scale industrial energy projects',
           },
         ]),
-      };
+      });
     }
   );
 
@@ -100,7 +111,7 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          skipAuth: true, // For demo purposes
+          skipAuth: true,
         },
       },
       schema: {
@@ -116,9 +127,9 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    async (_request, _reply) => {
+    async (_request, reply) => {
       const products = await fastify.db.getProducts();
-      _reply.send({ products: JSON.stringify(products) });
+      return reply.send({ products: JSON.stringify(products) });
 
       /* Example response:
     {
@@ -163,9 +174,10 @@ export default async function (fastify, _opts) {
   fastify.get(
     '/salesforce/summary/:systemId',
     {
+      // TODO: verify in the UI that disabling skipAuth works
       config: {
         salesforce: {
-          skipAuth: true, // For demo purposes
+          skipAuth: false,
         },
       },
       schema: {
@@ -196,7 +208,7 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    async function (request, _reply) {
+    async function (request, reply) {
       const { logger } = request.sdk;
       const { systemId } = request.params;
 
@@ -209,7 +221,7 @@ export default async function (fastify, _opts) {
         date
       );
 
-      _reply.send({
+      return reply.send({
         daily: JSON.stringify(summary.daily),
         weekly: JSON.stringify(summary.weekly),
         monthly: JSON.stringify(summary.monthly),
@@ -254,9 +266,10 @@ export default async function (fastify, _opts) {
   fastify.get(
     '/salesforce/forecast/:systemId',
     {
+      // TODO: verify in the UI that disabling skipAuth works
       config: {
         salesforce: {
-          skipAuth: true, // For demo purposes
+          skipAuth: false,
         },
       },
       schema: {
@@ -290,7 +303,7 @@ export default async function (fastify, _opts) {
       const date = request.query.date || new Date().toISOString();
 
       const forecast = await fastify.db.getEnergyForecast(systemId, date);
-      reply.send({ forecast: JSON.stringify(forecast) });
+      return reply.send({ forecast: JSON.stringify(forecast) });
 
       /* Example response:
     {

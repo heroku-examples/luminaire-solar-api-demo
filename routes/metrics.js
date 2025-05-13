@@ -83,7 +83,7 @@ export default async function (fastify, _opts) {
     handler: async function (request, reply) {
       const user = request.user.user;
       const systems = await fastify.db.getSystemsByUser(user.id);
-      reply.send(systems);
+      return reply.send(systems);
     },
   });
 
@@ -138,7 +138,7 @@ export default async function (fastify, _opts) {
       const date = request.params.date || new Date().toISOString();
 
       const metrics = await fastify.db.getMetricsBySystem(systemId, date);
-      reply.send(metrics);
+      return reply.send(metrics);
     },
   });
 
@@ -196,7 +196,7 @@ export default async function (fastify, _opts) {
         systemId,
         date
       );
-      reply.send(summary);
+      return reply.send(summary);
     },
   });
 
@@ -230,7 +230,7 @@ export default async function (fastify, _opts) {
 
       const { system, components } =
         await fastify.db.getSystemDetails(systemId);
-      reply.send({
+      return reply.send({
         ...system,
         components,
       });
@@ -266,7 +266,7 @@ export default async function (fastify, _opts) {
       const { systemId } = request.params;
 
       const pastMonth = await fastify.db.getActivityHistoryBySystem(systemId);
-      reply.send({ pastMonth: pastMonth });
+      return reply.send({ pastMonth: pastMonth });
     },
   });
 
@@ -299,7 +299,7 @@ export default async function (fastify, _opts) {
       const { systemId } = request.params;
 
       const weather = await fastify.db.getWeatherBySystem(systemId);
-      reply.send(weather);
+      return reply.send(weather);
     },
   });
 
@@ -331,7 +331,7 @@ export default async function (fastify, _opts) {
       const date = request.query.date || new Date().toISOString();
 
       const forecast = await fastify.db.getEnergyForecast(systemId, date);
-      reply.send(forecast);
+      return reply.send(forecast);
     },
   });
 }

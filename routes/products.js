@@ -45,7 +45,7 @@ export default async function (fastify, _opts) {
           'Error getting Salesforce products'
         );
       }
-      reply.send([...products, ...additionalProducts]);
+      return reply.send([...products, ...additionalProducts]);
     }
   );
 
@@ -88,7 +88,7 @@ export default async function (fastify, _opts) {
         reply.code(404).send({ error: 'Product not found' });
         return;
       }
-      reply.send(product);
+      return reply.send(product);
     }
   );
 }

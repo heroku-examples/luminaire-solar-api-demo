@@ -88,7 +88,7 @@ export default async function (fastify, _opts) {
           expiresIn: '1d',
         }
       );
-      reply.send({
+      return reply.send({
         authorization,
         user,
       });
