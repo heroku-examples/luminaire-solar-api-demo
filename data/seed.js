@@ -27,7 +27,8 @@ async function seed() {
     await client.query('DELETE FROM users');
     await client.query('DELETE FROM products');
 
-    // Create a demo user. @TODO: refactor so that implementations can be unified via helpers
+    // Create a demo user directly. This duplicates logic in db.js's createUser
+    // function, but is preferable since seed.js runs outside the Fastify context.
     const name = 'demo';
     const last_name = 'demo';
     const email = 'demo@heroku.ca';
@@ -37,10 +38,43 @@ async function seed() {
     const hashedPassword = crypto
       .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
       .toString('hex');
+    // Get Salesforce org ID and user ID from environment variables if available
+    const sf_org_id = process.env.SF_ORG_ID || null;
+    const sf_user_id = process.env.SF_USER_ID || null;
+
+    // Display a warning if Salesforce IDs are not set
+    if (!sf_org_id || !sf_user_id) {
+      console.log(
+        '\nWARNING: Salesforce org ID and/or user ID not set in .env'
+      );
+      console.log(
+        "This is fine if you don't intend to use `/api/salesforce` routes"
+      );
+      console.log(
+        'The API will happily work for other routes without these IDs.'
+      );
+      console.log('');
+      console.log('To enable `api/salesforce` route support:');
+      console.log('1. Run ./scripts/seed-user.sh <salesforce-org-alias>');
+      console.log('2. Re-run node data/seed.js\n');
+    } else {
+      console.log('\nSalesforce integration enabled with:');
+      console.log(`- Organization ID: ${sf_org_id}`);
+      console.log(`- User ID: ${sf_user_id}\n`);
+    }
 
     const { rows } = await client.query(
-      'INSERT INTO users (name, last_name, email, username, password, salt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, last_name, email, username',
-      [name, last_name, email, username, hashedPassword, salt]
+      'INSERT INTO users (id, sf_org_id, sf_user_id, name, last_name, email, username, password, salt) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, sf_org_id, sf_user_id, name, last_name, email, username',
+      [
+        sf_org_id,
+        sf_user_id,
+        name,
+        last_name,
+        email,
+        username,
+        hashedPassword,
+        salt,
+      ]
     );
     const user = rows[0];
 

@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS metrics (
 -- Create the 'users' table
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sf_org_id TEXT,
+    sf_user_id TEXT,
     name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT NOT NULL,

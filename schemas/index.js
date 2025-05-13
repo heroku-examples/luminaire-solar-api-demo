@@ -174,6 +174,14 @@ export const userSchema = {
       format: 'uuid',
       description: 'Unique identifier for the user account',
     },
+    sf_org_id: {
+      type: 'string',
+      description: 'Salesforce Organization ID for this user',
+    },
+    sf_user_id: {
+      type: 'string',
+      description: 'Salesforce User ID for this user',
+    },
     name: { type: 'string', description: "User's first name" },
     last_name: {
       type: 'string',

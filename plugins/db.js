@@ -37,7 +37,7 @@ export default fp(async (fastify) => {
       },
       getUserByUsername: async (username) => {
         const { rows } = await client.query(
-          'SELECT id, name, last_name, username, email FROM users WHERE username = $1',
+          'SELECT id, sf_org_id, sf_user_id, name, last_name, username, email FROM users WHERE username = $1',
           [username]
         );
         return rows[0];
