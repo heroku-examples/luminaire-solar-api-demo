@@ -52,6 +52,26 @@ export default async function (fastify, _opts) {
               description:
                 'JWT token to be used for authenticating subsequent API requests',
             },
+            user: {
+              type: 'object',
+              description:
+                'User details including Salesforce integration information',
+              properties: {
+                id: { type: 'string', description: 'User ID' },
+                sf_org_id: {
+                  type: 'string',
+                  description: 'Salesforce Organization ID',
+                },
+                sf_user_id: {
+                  type: 'string',
+                  description: 'Salesforce User ID',
+                },
+                name: { type: 'string', description: "User's first name" },
+                last_name: { type: 'string', description: "User's last name" },
+                username: { type: 'string', description: "User's username" },
+                email: { type: 'string', description: "User's email address" },
+              },
+            },
           },
         },
       },
@@ -70,6 +90,7 @@ export default async function (fastify, _opts) {
       );
       reply.send({
         authorization,
+        user,
       });
     },
   });
