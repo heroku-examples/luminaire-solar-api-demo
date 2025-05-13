@@ -39,13 +39,13 @@ async function seed() {
       .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
       .toString('hex');
     // Get Salesforce org ID and user ID from environment variables if available
-    const sf_org_id = process.env.SF_ORG_ID || null;
-    const sf_user_id = process.env.SF_USER_ID || null;
+    const sf_org_id = process.env.SF_DEMO_SEED_USER_ORGID || null;
+    const sf_user_id = process.env.SF_DEMO_SEED_USER_USERID || null;
 
     // Display a warning if Salesforce IDs are not set
     if (!sf_org_id || !sf_user_id) {
       console.log(
-        '\nWARNING: Salesforce org ID and/or user ID not set in .env'
+        '\nWARNING: Salesforce demo user org/user IDs not set in .env'
       );
       console.log(
         "This is fine if you don't intend to use `/api/salesforce` routes"
@@ -59,8 +59,8 @@ async function seed() {
       console.log('2. Re-run node data/seed.js\n');
     } else {
       console.log('\nSalesforce integration enabled with:');
-      console.log(`- Organization ID: ${sf_org_id}`);
-      console.log(`- User ID: ${sf_user_id}\n`);
+      console.log(`- Demo user organization ID: ${sf_org_id}`);
+      console.log(`- Demo user Salesforce ID: ${sf_user_id}\n`);
     }
 
     const { rows } = await client.query(

@@ -7,15 +7,32 @@ export default fp(async (fastify) => {
   try {
     const client = await fastify.pg.connect();
     fastify.decorate('db', {
-      createUser: async ({ name, last_name, email, username, password }) => {
+      createUser: async ({
+        name,
+        last_name,
+        email,
+        username,
+        password,
+        sf_org_id = null,
+        sf_user_id = null,
+      }) => {
         const salt = crypto.randomBytes(16).toString('hex');
         const hashedPassword = crypto
           .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
           .toString('hex');
 
         const { rows } = await client.query(
-          'INSERT INTO users (name, last_name, email, username, password, salt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, last_name, email, username',
-          [name, last_name, email, username, hashedPassword, salt]
+          'INSERT INTO users (id, sf_org_id, sf_user_id, name, last_name, email, username, password, salt) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, sf_org_id, sf_user_id, name, last_name, email, username',
+          [
+            sf_org_id,
+            sf_user_id,
+            name,
+            last_name,
+            email,
+            username,
+            hashedPassword,
+            salt,
+          ]
         );
         return rows[0];
       },

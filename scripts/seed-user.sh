@@ -1,24 +1,38 @@
 #!/bin/bash
 
-# Check if .env file exists, create it if not
-if [ ! -f .env ]; then
-  touch .env
-  echo "Created new .env file"
+# Determine the correct path for .env file
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+CURRENT_DIR="$(pwd)"
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+
+# Check if current directory ends with 'scripts'
+if [[ "$CURRENT_DIR" == */scripts ]]; then
+  ENV_PATH=".."
+  echo "Running from scripts directory, using $ENV_PATH/.env"
+else
+  ENV_PATH="."
+  echo "Running from project root, using $ENV_PATH/.env"
 fi
 
-# Check if SF_ORG_ID already exists in .env
-if grep -q "^SF_ORG_ID=" .env; then
-  SF_ORG_ID=$(grep "^SF_ORG_ID=" .env | cut -d '=' -f2)
-  echo "Found existing SF_ORG_ID: $SF_ORG_ID"
+# Check if .env file exists, create it if not
+if [ ! -f "$ENV_PATH/.env" ]; then
+  touch "$ENV_PATH/.env"
+  echo "Created new .env file at $ENV_PATH/.env"
+fi
+
+# Check if SF_DEMO_SEED_USER_ORGID already exists in .env
+if grep -q "^SF_DEMO_SEED_USER_ORGID=" "$ENV_PATH/.env"; then
+  SF_ORG_ID=$(grep "^SF_DEMO_SEED_USER_ORGID=" "$ENV_PATH/.env" | cut -d '=' -f2)
+  echo "Found existing SF_DEMO_SEED_USER_ORGID: $SF_ORG_ID"
   EXISTING_SF_ORG_ID=true
 else
   EXISTING_SF_ORG_ID=false
 fi
 
-# Check if SF_USER_ID already exists in .env
-if grep -q "^SF_USER_ID=" .env; then
-  SF_USER_ID=$(grep "^SF_USER_ID=" .env | cut -d '=' -f2)
-  echo "Found existing SF_USER_ID: $SF_USER_ID"
+# Check if SF_DEMO_SEED_USER_USERID already exists in .env
+if grep -q "^SF_DEMO_SEED_USER_USERID=" "$ENV_PATH/.env"; then
+  SF_USER_ID=$(grep "^SF_DEMO_SEED_USER_USERID=" "$ENV_PATH/.env" | cut -d '=' -f2)
+  echo "Found existing SF_DEMO_SEED_USER_USERID: $SF_USER_ID"
   EXISTING_SF_USER_ID=true
 else
   EXISTING_SF_USER_ID=false
@@ -69,8 +83,8 @@ if [ "$EXISTING_SF_ORG_ID" = false ]; then
     echo "Error: Could not extract Organization ID from CLI response."
     exit 1
   fi
-  echo "SF_ORG_ID=$NEW_SF_ORG_ID" >> .env
-  echo "Added SF_ORG_ID=$NEW_SF_ORG_ID to .env file"
+  printf "\nSF_DEMO_SEED_USER_ORGID=$NEW_SF_ORG_ID\n" >> "$ENV_PATH/.env"
+  echo "Added SF_DEMO_SEED_USER_ORGID=$NEW_SF_ORG_ID to $ENV_PATH/.env file"
 fi
 
 if [ "$EXISTING_SF_USER_ID" = false ]; then
@@ -94,9 +108,9 @@ if [ "$EXISTING_SF_USER_ID" = false ]; then
     fi
   fi
   
-  echo "SF_USER_ID=$NEW_SF_USER_ID" >> .env
-  echo "Added SF_USER_ID=$NEW_SF_USER_ID to .env file"
+  printf "SF_DEMO_SEED_USER_USERID=$NEW_SF_USER_ID\n" >> "$ENV_PATH/.env"
+  echo "Added SF_DEMO_SEED_USER_USERID=$NEW_SF_USER_ID to $ENV_PATH/.env file"
 fi
 
-echo "Setup complete! Your Salesforce org details have been added to the .env file."
+echo "Setup complete! Your Salesforce org details have been added to the $ENV_PATH/.env file."
 echo "Run 'node data/seed.js' to create a demo user with these Salesforce details."

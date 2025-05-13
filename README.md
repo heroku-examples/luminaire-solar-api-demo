@@ -72,11 +72,38 @@ Once the environment variables are set up, setup the database schema with:
 node data/migration.js
 ```
 
+### Salesforce Integration (Optional)
+
+If you plan to use the `/api/salesforce` routes, you need to configure Salesforce credentials for the demo user:
+
+1. Install the Salesforce CLI:
+
+   ```sh
+   npm install -g @salesforce/cli
+   ```
+
+2. Log in to your Salesforce org:
+
+   ```sh
+   sf org login web --alias my-org
+   ```
+
+3. Run the seed-user script to extract Salesforce org ID and user ID:
+
+   ```sh
+   ./scripts/seed-user.sh my-org
+   ```
+
+This will add the necessary Salesforce credentials to your `.env` file.
+
 Then seed the database with mock data by running:
 
 ```sh
 node data/seed.js
 ```
+
+> [!NOTE]
+> If you don't configure Salesforce credentials, the API will still work for non-Salesforce routes, but `/api/salesforce` endpoints will not function correctly.
 
 Run the project locally with:
 
