@@ -45,7 +45,7 @@ Before using the script, you need to:
 Parameters:
 
 - `salesforce-org-alias`: Your Salesforce org alias created during setup
-- `api-url`: The full API endpoint URL (e.g., http://localhost:3000/salesforce/products)
+- `api-url`: The full API endpoint URL (e.g., http://localhost:3000/api/salesforce/products)
 - `payload-json`: JSON payload (required for POST, ignored for GET)
 - `http-method`: HTTP method to use (GET or POST) - defaults to GET
 - `session-based-permission-set`: [Advanced] Optional Salesforce permission set to activate for this request
@@ -62,31 +62,31 @@ Authentication Options:
 1. Test a GET endpoint:
 
    ```bash
-   ./invoke.sh my-org http://localhost:3000/salesforce/products
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/products
    ```
 
 2. Test a POST endpoint with a payload:
 
    ```bash
-   ./invoke.sh my-org http://localhost:3000/salesforce/user '{"userId": "123"}' POST
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/user '{"userId": "123"}' POST
    ```
 
 3. Test a GET endpoint with JWT authentication (using default `.jwt-token` file):
 
    ```bash
-   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/products --auth
    ```
 
 4. Test a GET endpoint with JWT authentication (using a specific token file):
 
    ```bash
-   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth my-token.txt
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/products --auth my-token.txt
    ```
 
 5. Test a POST endpoint with JWT authentication:
 
    ```bash
-   ./invoke.sh my-org http://localhost:3000/salesforce/user '{"userId": "123"}' POST --auth
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/user '{"userId": "123"}' POST --auth
    ```
 
 6. Use with the `get-jwt.sh` script:
@@ -96,7 +96,7 @@ Authentication Options:
    ./get-jwt.sh http://localhost:3000/api/user/authenticate demo demo
 
    # Then use it with invoke.sh
-   ./invoke.sh my-org http://localhost:3000/salesforce/products --auth
+   ./invoke.sh my-org http://localhost:3000/api/salesforce/products --auth
    ```
 
 ### How It Works
