@@ -166,3 +166,67 @@ The script:
 4. Outputs the token to the console
 
 The saved token can then be used for API requests that require JWT authentication by including it in the Authorization header.
+
+## seed-user.sh
+
+The `seed-user.sh` script is a utility to configure Salesforce org and user details for local development.
+
+### Purpose
+
+The script helps with:
+
+- Extracting Salesforce org ID and user ID from a configured Salesforce org
+- Adding these values to your .env file for use by the application
+- Enabling proper generation of the required `x-client-context` header for Salesforce API endpoints
+
+### Setup Requirements
+
+Before using the script, you need to:
+
+1. Install the Salesforce CLI:
+
+   ```bash
+   npm install -g @salesforce/cli
+   ```
+
+2. Log in and create a Salesforce org alias:
+
+   ```bash
+   sf org login web --alias my-org
+   ```
+
+### Usage
+
+```bash
+./seed-user.sh <salesforce-org-alias>
+```
+
+Parameters:
+
+- `salesforce-org-alias`: Your Salesforce org alias created during setup
+
+### Examples
+
+1. Configure Salesforce details for local development:
+
+   ```bash
+   ./seed-user.sh my-org
+   ```
+
+2. After setup, seed the database with a user that includes these details:
+
+   ```bash
+   node data/seed.js
+   ```
+
+### How It Works
+
+The script:
+
+1. Checks if Salesforce details already exist in your .env file
+2. If not, uses the Salesforce CLI to get org details for the provided alias
+3. Extracts the org ID and user ID from the CLI response
+4. Adds these values to your .env file
+5. The seed.js script will then use these values when creating the demo user
+
+This approach enables proper testing of Salesforce endpoints by providing the necessary context information for generating the required `x-client-context` header.
