@@ -9,9 +9,10 @@
 - An [Heroku](https://signup.heroku.com/) account
 - [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
 - PostgreSQL [psql](https://www.postgresql.org/download/) client
-- Redis server (for chat memory)
-- [Heroku AI CLI](https://devcenter.heroku.com/articles/heroku-inference#install-the-cli-plugin)
-- Heroku Managed Inference and Agents [MIA](https://elements.heroku.com/addons/heroku-inference)
+- PostgreSQL server (required)
+- Redis server (optional, only needed for chat memory when using AI features)
+- [Heroku AI CLI](https://devcenter.heroku.com/articles/heroku-inference#install-the-cli-plugin) (optional, only needed when using AI features)
+- Heroku Managed Inference and Agents [MIA](https://elements.heroku.com/addons/heroku-inference) (optional, only needed when using AI features)
 
 ## Installation
 
