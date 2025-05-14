@@ -1,11 +1,43 @@
-/**
- * These routes are part of initial integration and maintain backward compatibility
- * TODO: refined API consolidation
- */
+import {
+  salesforceUserSchema,
+  salesforceInfoSchema,
+  salesforceProductsSchema,
+  salesforceSummarySchema,
+  salesforceForecastSchema,
+  errorSchema,
+} from '../schemas/index.js';
+
 export default async function (fastify, _opts) {
-  /**
-   * Mock endpoint to get user info
-   */
+  // Register schemas
+  fastify.addSchema({
+    $id: 'salesforceUser',
+    ...salesforceUserSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'salesforceInfo',
+    ...salesforceInfoSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'salesforceProducts',
+    ...salesforceProductsSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'salesforceSummary',
+    ...salesforceSummarySchema,
+  });
+
+  fastify.addSchema({
+    $id: 'salesforceForecast',
+    ...salesforceForecastSchema,
+  });
+
+  fastify.addSchema({
+    $id: 'error',
+    ...errorSchema,
+  });
   fastify.get(
     '/salesforce/user',
     {
@@ -15,20 +47,20 @@ export default async function (fastify, _opts) {
         },
       },
       schema: {
-        description: 'Get authenticated user information',
+        operationId: 'getSalesforceUser',
+        description:
+          'Get authenticated user information including associated Salesforce org/userid for integration with Salesforce services via AppLink.',
         tags: ['salesforce'],
         response: {
           200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              sf_org_id: { type: 'string' },
-              sf_user_id: { type: 'string' },
-              name: { type: 'string' },
-              last_name: { type: 'string' },
-              username: { type: 'string' },
-              email: { type: 'string' },
-            },
+            description:
+              'Successfully retrieved authenticated user information with Salesforce organization and user identifiers for integration with Salesforce services via AppLink.',
+            $ref: 'salesforceUser#',
+          },
+          401: {
+            description:
+              'Authentication failed due to missing or invalid JWT token',
+            $ref: 'error#',
           },
         },
       },
@@ -58,19 +90,24 @@ export default async function (fastify, _opts) {
     {
       config: {
         salesforce: {
-          skipAuth: true, // For demo purposes
+          skipAuth: true,
         },
       },
       schema: {
-        description: 'Get company information',
+        operationId: 'getSalesforceInfo',
+        description:
+          'Get detailed company information and services offered for Salesforce integration.',
         tags: ['salesforce'],
         response: {
           200: {
-            type: 'object',
-            properties: {
-              description: { type: 'string' },
-              services: { type: 'string' },
-            },
+            description:
+              'Successfully retrieved company information and services offered, formatted for Salesforce integration.',
+            $ref: 'salesforceInfo#',
+          },
+          500: {
+            description:
+              'Server error occurred while retrieving company information',
+            $ref: 'error#',
           },
         },
       },
@@ -115,14 +152,20 @@ export default async function (fastify, _opts) {
         },
       },
       schema: {
-        description: 'Get product catalog',
+        operationId: 'getSalesforceProducts',
+        description:
+          'Get complete product catalog formatted for Salesforce integration, including solar panels, batteries, and related equipment.',
         tags: ['salesforce'],
         response: {
           200: {
-            type: 'object',
-            properties: {
-              products: { type: 'string' },
-            },
+            description:
+              'Successfully retrieved product catalog information as a JSON string for Salesforce integration.',
+            $ref: 'salesforceProducts#',
+          },
+          500: {
+            description:
+              'Server error occurred while retrieving product catalog',
+            $ref: 'error#',
           },
         },
       },
@@ -181,29 +224,51 @@ export default async function (fastify, _opts) {
         },
       },
       schema: {
-        description: 'Get metrics summary by system',
+        operationId: 'getSalesforceMetricsSummary',
+        description:
+          'Get comprehensive metrics summary for a specific solar system, including daily, weekly, and monthly energy production and consumption data.',
         tags: ['salesforce'],
         params: {
           type: 'object',
           required: ['systemId'],
           properties: {
-            systemId: { type: 'string' },
+            systemId: {
+              type: 'string',
+              description:
+                'Unique identifier of the solar system to get metrics for',
+            },
           },
         },
         querystring: {
           type: 'object',
           properties: {
-            date: { type: 'string' },
+            date: {
+              type: 'string',
+              description:
+                'Optional date parameter to retrieve metrics for a specific date. If not provided, current date is used.',
+            },
           },
         },
         response: {
           200: {
-            type: 'object',
-            properties: {
-              daily: { type: 'string' },
-              weekly: { type: 'string' },
-              monthly: { type: 'string' },
-            },
+            description:
+              'Successfully retrieved energy metrics summary for the specified system, formatted for Salesforce integration.',
+            $ref: 'salesforceSummary#',
+          },
+          401: {
+            description:
+              'Authentication failed due to missing or invalid JWT token',
+            $ref: 'error#',
+          },
+          404: {
+            description:
+              'System not found or no metrics available for the specified system',
+            $ref: 'error#',
+          },
+          500: {
+            description:
+              'Server error occurred while retrieving system metrics',
+            $ref: 'error#',
           },
         },
       },
@@ -273,27 +338,51 @@ export default async function (fastify, _opts) {
         },
       },
       schema: {
-        description: 'Get energy forecast by system',
+        operationId: 'getSalesforceForecast',
+        description:
+          'Get energy production forecast for a specific solar system, providing predicted energy generation based on weather patterns and system capabilities.',
         tags: ['salesforce'],
         params: {
           type: 'object',
           required: ['systemId'],
           properties: {
-            systemId: { type: 'string' },
+            systemId: {
+              type: 'string',
+              description:
+                'Unique identifier of the solar system to get forecast for',
+            },
           },
         },
         querystring: {
           type: 'object',
           properties: {
-            date: { type: 'string' },
+            date: {
+              type: 'string',
+              description:
+                'Optional date parameter to retrieve forecast from a specific date. If not provided, current date is used.',
+            },
           },
         },
         response: {
           200: {
-            type: 'object',
-            properties: {
-              forecast: { type: 'string' },
-            },
+            description:
+              'Successfully retrieved energy forecast for the specified system, formatted for Salesforce integration.',
+            $ref: 'salesforceForecast#',
+          },
+          401: {
+            description:
+              'Authentication failed due to missing or invalid JWT token',
+            $ref: 'error#',
+          },
+          404: {
+            description:
+              'System not found or no forecast available for the specified system',
+            $ref: 'error#',
+          },
+          500: {
+            description:
+              'Server error occurred while retrieving system forecast',
+            $ref: 'error#',
           },
         },
       },

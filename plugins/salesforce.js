@@ -17,23 +17,13 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
   const salesforcePreHandler = async (request, _reply) => {
     request.sdk = salesforceSdk.init();
 
-    const routeOptions = request.routeOptions;
-    const hasSalesforceConfig =
-      routeOptions.config && routeOptions.config.salesforce;
-    if (
-      !(
-        hasSalesforceConfig &&
-        routeOptions.config.salesforce.parseRequest === false
-      )
-    ) {
-      // Enrich request with hydrated SDK APIs
-      const parsedRequest = request.sdk.salesforce.parseRequest(
-        request.headers,
-        request.body,
-        request.log
-      );
-      request.sdk = Object.assign(request.sdk, parsedRequest);
-    }
+    // Always parse the request since this handler is only applied to Salesforce routes
+    const parsedRequest = request.sdk.salesforce.parseRequest(
+      request.headers,
+      request.body,
+      request.log
+    );
+    request.sdk = Object.assign(request.sdk, parsedRequest);
   };
 
   /**
@@ -65,13 +55,10 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
   };
 
   /**
-   * Apply Salesforce preHandlers to routes.
+   * Apply Salesforce preHandlers only to Salesforce routes.
    *
-   * {config: {salesforce: {parseRequest: false}}}
-   * Parsing is specific to External Service requests that contain additional
-   * request context. Setting parseRequest:false will not parse the request
-   * to hydrate Salesforce SDK APIs to request.sdk.
-   * This is useful when the request is NOT made from an External Service.
+   * This implementation only applies Salesforce middleware to routes
+   * that begin with '/salesforce/' or have explicit Salesforce configuration.
    *
    * {config: {salesforce: {async: true || customResponseHandlerFunction}}},
    * When routes are configured as async, true applies the standard 201 response
@@ -82,11 +69,23 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
     const hasSalesforceConfig =
       routeOptions.config && routeOptions.config.salesforce;
 
-    // Add Salesforce preHandler to all routes
-    if (!routeOptions.preHandler) {
-      routeOptions.preHandler = [salesforcePreHandler];
-    } else if (Array.isArray(routeOptions.preHandler)) {
-      routeOptions.preHandler.push(salesforcePreHandler);
+    // Check if this is a Salesforce route
+    const isSalesforcePath =
+      (routeOptions.url && routeOptions.url.includes('/salesforce/')) ||
+      (routeOptions.path && routeOptions.path.includes('/salesforce/'));
+
+    // Only add Salesforce preHandler to Salesforce routes or routes with explicit config
+    if (isSalesforcePath || hasSalesforceConfig) {
+      if (!routeOptions.preHandler) {
+        routeOptions.preHandler = [salesforcePreHandler];
+      } else if (Array.isArray(routeOptions.preHandler)) {
+        routeOptions.preHandler.push(salesforcePreHandler);
+      } else {
+        routeOptions.preHandler = [
+          routeOptions.preHandler,
+          salesforcePreHandler,
+        ];
+      }
     }
 
     if (hasSalesforceConfig && routeOptions.config.salesforce.async) {
@@ -141,7 +140,11 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
         await request.jwtVerify();
       } catch (err) {
         request.log.error(`JWT verification failed: ${err.message}`);
-        reply.code(401).send({ message: 'Unauthorized access' });
+        reply.code(401).send({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Unauthorized access',
+        });
       }
     }
   });
@@ -151,7 +154,7 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
    */
   fastify.get(
     '/healthcheck',
-    { config: { salesforce: { parseRequest: false, skipAuth: true } } },
+    { config: { salesforce: { skipAuth: true } } },
     async (_request, reply) => {
       reply.status(200).send('OK');
     }

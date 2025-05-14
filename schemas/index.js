@@ -391,3 +391,96 @@ export const clearChatHistoryResponseSchema = {
     sessionId: { type: 'string' },
   },
 };
+
+// Schemas for Salesforce routes
+export const salesforceUserSchema = {
+  type: 'object',
+  description:
+    'Authenticated user information including Salesforce credentials',
+  properties: {
+    id: {
+      type: 'string',
+      description: 'Unique identifier for the user',
+    },
+    sf_org_id: {
+      type: 'string',
+      description: 'Salesforce Organization ID',
+    },
+    sf_user_id: {
+      type: 'string',
+      description: 'Salesforce User ID',
+    },
+    name: {
+      type: 'string',
+      description: "User's first name",
+    },
+    last_name: {
+      type: 'string',
+      description: "User's last name",
+    },
+    username: {
+      type: 'string',
+      description: "User's username",
+    },
+    email: {
+      type: 'string',
+      description: "User's email address",
+    },
+  },
+};
+
+export const salesforceInfoSchema = {
+  type: 'object',
+  description: 'Company information for Salesforce integration',
+  properties: {
+    description: {
+      type: 'string',
+      description: 'Detailed description of the company',
+    },
+    services: {
+      type: 'string',
+      description: 'JSON stringified array of services offered',
+    },
+  },
+};
+
+export const salesforceProductsSchema = {
+  type: 'object',
+  description: 'Product catalog information for Salesforce integration',
+  properties: {
+    products: {
+      type: 'string',
+      description: 'JSON stringified array of product objects',
+    },
+  },
+};
+
+export const salesforceSummarySchema = {
+  type: 'object',
+  description: 'Energy metrics summary for Salesforce integration',
+  properties: {
+    daily: {
+      type: 'string',
+      description: 'JSON stringified array of daily metrics',
+    },
+    weekly: {
+      type: 'string',
+      description: 'JSON stringified array of weekly metrics',
+    },
+    monthly: {
+      type: 'string',
+      description: 'JSON stringified array of monthly metrics',
+    },
+  },
+};
+
+export const salesforceForecastSchema = {
+  type: 'object',
+  description: 'Energy forecast for Salesforce integration',
+  properties: {
+    forecast: {
+      type: 'string',
+      description: 'JSON stringified array of forecast data',
+    },
+  },
+};

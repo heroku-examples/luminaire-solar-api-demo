@@ -17,6 +17,8 @@ import usersRoutes from './routes/users.js';
 import productsRoutes from './routes/products.js';
 import metricsRoutes from './routes/metrics.js';
 import webhooksRoutes from './routes/webhooks.js';
+import salesforceRoutes from './routes/salesforce.js';
+import salesforcePlugin from './plugins/salesforce.js';
 
 export async function build(opts = {}) {
   // Create Fastify instance with merged options
@@ -150,11 +152,13 @@ export async function build(opts = {}) {
   }
 
   fastify.register(dbPlugin);
+  fastify.register(salesforcePlugin);
 
   fastify.register(usersRoutes, { prefix: '/api' });
   fastify.register(productsRoutes, { prefix: '/api' });
   fastify.register(metricsRoutes, { prefix: '/api' });
   fastify.register(webhooksRoutes, { prefix: '/api' });
+  fastify.register(salesforceRoutes, { prefix: '/api' });
 
   fastify.get('/', async (_request, reply) => {
     return reply.redirect('/api-docs');
