@@ -156,6 +156,16 @@ export default async function (fastify, _opts) {
         description:
           'Get complete product catalog formatted for Salesforce integration, including solar panels, batteries, and related equipment.',
         tags: ['salesforce'],
+        querystring: {
+          type: 'object',
+          properties: {
+            filter: {
+              type: 'string',
+              description:
+                'Optional filter parameter to filter products by some criteria',
+            },
+          },
+        },
         response: {
           200: {
             description:
@@ -170,7 +180,15 @@ export default async function (fastify, _opts) {
         },
       },
     },
-    async (_request, reply) => {
+    async (request, reply) => {
+      // Get the filter parameter from the query, but ignore it for now
+      const filter = request.query.filter;
+      // Log the filter if provided (optional)
+      if (filter) {
+        request.log.info(`Filter parameter provided: ${filter}`);
+      }
+
+      // Return all products regardless of filter
       const products = await fastify.db.getProducts();
       return reply.send({ products: JSON.stringify(products) });
 
