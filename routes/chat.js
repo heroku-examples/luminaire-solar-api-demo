@@ -1,4 +1,4 @@
-import { Readable, Transform } from 'node:stream';
+import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import {
   chatSchema,
@@ -8,6 +8,7 @@ import {
   clearChatHistorySchema,
   clearChatHistoryResponseSchema,
 } from '../schemas/index.js';
+import { MiaTransformStream } from '../lib/mia-utils.js';
 
 export default async function (fastify, _opts) {
   fastify.addSchema({
@@ -82,86 +83,12 @@ export default async function (fastify, _opts) {
           objectMode: true,
         });
 
-        const extractMessage = (chunk) => {
-          return chunk.choices[0]?.delta || chunk.choices[0]?.message;
-        };
-
-        const summarizeStream = new Transform({
-          objectMode: true,
-          transform(chunk, encoding, callback) {
-            try {
-              // If it's a new conversation, send an initial welcome message before the stream
-              if (isNewConversation) {
-                const currentDate = new Date();
-                const formattedTime = currentDate.toLocaleString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  timeZoneName: 'short',
-                });
-
-                const welcomeMessage = `Luminaire Agent session started at ${formattedTime}`;
-
-                const initialMessage =
-                  JSON.stringify({
-                    role: 'agent',
-                    content: welcomeMessage,
-                    sessionId,
-                  }) + '\n';
-                this.push(initialMessage);
-                isNewConversation = false;
-              }
-
-              const message = extractMessage(chunk);
-              if (
-                (message.role === 'assistant' && !message.tool_calls) ||
-                message.role === ''
-              ) {
-                // Store assistant responses in chat memory
-                if (message.content) {
-                  fastify.chatMemory
-                    .storeMessage({
-                      sessionId,
-                      role: 'assistant',
-                      content: message.content,
-                    })
-                    .catch((err) => {
-                      fastify.log.error(
-                        { err },
-                        'Error storing assistant message in chat memory'
-                      );
-                    });
-                  this.push(message.content);
-                }
-                return callback();
-              }
-
-              const summarizedResponse =
-                JSON.stringify({
-                  role: 'agent',
-                  content: summarizeMessage(message),
-                  sessionId,
-                }) + '\n';
-
-              this.lastChunk = chunk;
-              callback(null, summarizedResponse);
-            } catch (err) {
-              fastify.log.error({ err, chunk }, 'Error in transform stream');
-              this.push(
-                JSON.stringify({
-                  role: 'error',
-                  content: err.message,
-                  sessionId,
-                }) + '\n'
-              );
-              callback(err);
-            }
-          },
-          flush(callback) {
-            this.push('\n');
-            callback();
-          },
-        });
+        const summarizeStream = new MiaTransformStream(
+          { objectMode: true },
+          fastify.chatMemory,
+          sessionId,
+          isNewConversation
+        );
 
         jsonStream.on('error', (err) => {
           fastify.log.error({ err }, 'Error reading chat stream');
@@ -215,6 +142,12 @@ export default async function (fastify, _opts) {
     handler: async function (request, reply) {
       const { sessionId, limit = 10 } = request.query;
 
+      if (!fastify.chatMemory) {
+        return reply.code(500).send({
+          error: 'Chat memory is not enabled',
+        });
+      }
+
       try {
         const history = await fastify.ai.getChatHistory(sessionId, limit);
         return reply.send(history);
@@ -249,6 +182,12 @@ export default async function (fastify, _opts) {
     handler: async function (request, reply) {
       const { sessionId } = request.body;
 
+      if (!fastify.chatMemory) {
+        return reply.code(500).send({
+          error: 'Chat memory is not enabled',
+        });
+      }
+
       try {
         const deleted = await fastify.ai.clearChatHistory(sessionId);
         return reply.send({
@@ -264,57 +203,4 @@ export default async function (fastify, _opts) {
       }
     },
   });
-
-  function summarizeMessage(message) {
-    switch (message?.role) {
-      case 'user':
-        return 'Prompt sent.';
-
-      case 'agent':
-        return message.content;
-
-      case 'assistant':
-        // eslint-disable-next-line no-case-declarations
-        const toolCall = message.tool_calls?.[0];
-
-        if (toolCall) {
-          const args = JSON.parse(toolCall.function?.arguments || '{}');
-          const functionName = toolCall.function?.name;
-
-          fastify.log.info(toolCall, 'agent tool call');
-
-          if (
-            /^web_browsing_single_page|^web_browsing_multi_page/.test(
-              functionName
-            )
-          ) {
-            return `Fetching the page ${args.url} ...`;
-          } else if (/^code_exec_ruby/.test(functionName)) {
-            return 'Executing Ruby code...';
-          } else if (/^code_exec_python/.test(functionName)) {
-            return `Executing Python code... ${message.content}`;
-          } else if (/^code_exec_node/.test(functionName)) {
-            return 'Executing Node.js code...';
-          } else if (/^code_exec_go/.test(functionName)) {
-            return 'Compiling and executing Go code...';
-          } else if (/^database_get_schema/.test(functionName)) {
-            return 'Fetching the schema for the database...';
-          } else if (/^database_run_query/.test(functionName)) {
-            return 'Querying the database...';
-          } else if (/^dyno_run_command/.test(functionName)) {
-            return 'Running the command on the Heroku dyno...';
-          } else if (/^search_web/.test(functionName)) {
-            return `Searching the web for ${args.search_query} ...`;
-          } else if (/^pdf_read/.test(functionName)) {
-            return `Reading the PDF at ${args.url} ...`;
-          }
-        } else {
-          return 'The agent has the information it needs.';
-        }
-        break;
-
-      default:
-        return message.content;
-    }
-  }
 }

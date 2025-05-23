@@ -8,8 +8,7 @@ export const config = {
   ENABLE_MEMORY: process.env.ENABLE_MEMORY || false,
   REDIS_URL: process.env.REDIS_URL,
   APP_NAME: process.env.APP_NAME, // The app name to use for the heroku tools
-  DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT || 'DATABASE', // The name of the database attachment to use for the heroku tools
-  PYTHON_RUNNER: process.env.PYTHON_RUNNER,
+  DATABASE_ATTACHMENT: process.env.DATABASE_ATTACHMENT, // The name of the database attachment to use for the heroku tools
   DYNO_SIZE: process.env.DYNO_SIZE || 'Standard-1X', // The size of the dyno to use for the heroku tools
   INFERENCE_KEY: process.env.INFERENCE_KEY,
   INFERENCE_MODEL_ID: process.env.INFERENCE_MODEL_ID,
@@ -31,12 +30,6 @@ if (config.AI_ENGINE === 'mia') {
   if (!config.INFERENCE_MODEL_ID) {
     throw new Error(
       'INFERENCE_MODEL_ID is required for MIA, please provision the MIA addon'
-    );
-  }
-
-  if (!config.PYTHON_RUNNER) {
-    throw new Error(
-      'PYTHON_RUNNER is required for MIA, please deploy a code runner and attach it to the inference addon'
     );
   }
 
