@@ -22,7 +22,9 @@
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --write .",
     "prepare": "husky",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "generate-api-docs": "node scripts/generate-api-docs.js",
+    "generate-sf-docs": "node scripts/generate-api-docs.js --only /api/salesforce --output api-docs.yaml"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
@@ -54,8 +56,10 @@
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
+    "js-yaml": "^4.1.0",
     "lint-staged": "^15.4.3",
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "swagger-jsdoc": "^6.2.8"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
