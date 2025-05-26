@@ -29,7 +29,6 @@
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@faker-js/faker": "^8.4.1",
     "@fastify/auth": "^5.0.2",
-    "@fastify/autoload": "^5.10.0",
     "@fastify/cors": "^10.1.0",
     "@fastify/formbody": "^8.0.2",
     "@fastify/jwt": "^9.0.4",
@@ -41,12 +40,11 @@
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "fastify-plugin": "^4.5.1",
-    "postgrator": "^8.0.0",
     "ioredis": "^5.6.0",
-    "openai": "^4.86.2",
     "pg": "^8.13.3",
     "pino": "^9.6.0",
-    "pino-pretty": "^11.3.0"
+    "pino-pretty": "^11.3.0",
+    "postgrator": "^8.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

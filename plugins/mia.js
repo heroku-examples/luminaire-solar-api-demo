@@ -1,13 +1,8 @@
 import fp from 'fastify-plugin';
-import { OpenAI } from 'openai';
 import { config } from '../config.js';
 import { randomUUID } from 'node:crypto';
 
 export default fp(async (fastify) => {
-  const client = new OpenAI({
-    apiKey: config.INFERENCE_KEY,
-    baseURL: config.INFERENCE_URL + '/v1',
-  });
   fastify.decorate('ai', {
     /**
      * Execute a chat completion with memory
@@ -24,7 +19,7 @@ export default fp(async (fastify) => {
       const systemId = options.systemId || null;
 
       let previousMessages = [];
-      if (config.ENABLE_MEMORY) {
+      if (fastify.chatMemory) {
         // Store the user's question in chat memory
         await fastify.chatMemory.storeMessage({
           sessionId,
@@ -151,64 +146,62 @@ The response must meet the following criteria:
       }
 
       // Execute the completion
-      const response = await client.chat.completions.create({
-        model: config.INFERENCE_MODEL_ID,
-        messages,
-        tools: [
-          {
-            type: 'heroku_tool',
-            function: {
-              name: 'database_get_schema',
-            },
-            runtime_params: {
-              target_app_name: config.APP_NAME,
-              dyno_size: config.DYNO_SIZE,
-              tool_params: {
-                db_attachment: config.DATABASE_ATTACHMENT,
+      const response = await fetch(config.INFERENCE_URL + '/v1/agents/heroku', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.INFERENCE_KEY}`,
+        },
+
+        body: JSON.stringify({
+          model: config.INFERENCE_MODEL_ID,
+          messages,
+          tools: [
+            {
+              type: 'heroku_tool',
+              name: 'postgres_get_schema',
+              runtime_params: {
+                target_app_name: config.APP_NAME,
+                dyno_size: config.DYNO_SIZE,
+                tool_params: {
+                  db_attachment: config.DATABASE_ATTACHMENT,
+                },
               },
             },
-          },
-          {
-            type: 'heroku_tool',
-            function: {
-              name: 'database_run_query',
-            },
-            runtime_params: {
-              target_app_name: config.APP_NAME,
-              dyno_size: config.DYNO_SIZE,
-              tool_params: {
-                db_attachment: config.DATABASE_ATTACHMENT,
+            {
+              type: 'heroku_tool',
+              name: 'postgres_run_query',
+              runtime_params: {
+                target_app_name: config.APP_NAME,
+                dyno_size: config.DYNO_SIZE,
+                tool_params: {
+                  db_attachment: config.DATABASE_ATTACHMENT,
+                },
               },
             },
-          },
-          {
-            type: 'heroku_tool',
-            function: {
-              name: 'web_browsing_single_page',
+            {
+              type: 'heroku_tool',
+              name: 'html_to_markdown',
             },
-          },
-          {
-            type: 'heroku_tool',
-            function: {
+            {
+              type: 'mcp',
               name: 'code_exec_python',
             },
-            runtime_params: {
-              target_app_name: config.PYTHON_RUNNER,
-              max_retries: 4,
+            {
+              type: 'heroku_tool',
+              name: 'pdf_to_markdown',
             },
-          },
-          {
-            type: 'heroku_tool',
-            function: {
-              name: 'pdf_read',
-            },
-          },
-        ],
-        tool_choice: 'auto',
-        stream: true,
+          ],
+        }),
       });
 
-      return response;
+      if (!response.ok) {
+        const error = await response.json();
+        fastify.log.error(error);
+        throw new Error('Failed to fetch completion');
+      }
+
+      return response.body;
     },
 
     /**
