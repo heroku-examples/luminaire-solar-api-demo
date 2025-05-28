@@ -2,21 +2,48 @@
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
+A demo API showcasing Heroku features including PostgreSQL, Redis, AI inference, and Salesforce integration via AppLink.
+
+## Quick Start
+
+Use the automated setup script for the fastest deployment:
+
+```bash
+# Basic setup (Salesforce only, no AI)
+./scripts/setup.sh --sf-org my-org
+
+# Setup with Heroku team (no AI)
+./scripts/setup.sh --heroku-team my-team --sf-org my-org
+
+# Full setup (with AI features)
+./scripts/setup.sh --heroku-team my-team --sf-org my-org --enable-ai
+```
+
+> **Note**: For detailed manual setup instructions, see [README-DETAILED.md](README-DETAILED.md)
+
 ## Requirements
 
-- Node.js LTS (>v20.x)
-- [pnpm](https://pnpm.io/) (> 9.8.0)
-- An [Heroku](https://signup.heroku.com/) account
-- [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
-- PostgreSQL [psql](https://www.postgresql.org/download/) client
-- PostgreSQL server (required)
-- Redis server (optional, only needed for chat memory when using AI features)
-- [Heroku AI CLI](https://devcenter.heroku.com/articles/heroku-inference#install-the-cli-plugin) (optional, only needed when using AI features)
-- Heroku Managed Inference and Agents [MIA](https://elements.heroku.com/addons/heroku-inference) (optional, only needed when using AI features)
+- Node.js LTS (v20+)
+- [pnpm](https://pnpm.io/) (v9.8.0+)
+- [Heroku account](https://signup.heroku.com/) and [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
+- [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli) (for AppLink integration)
+- PostgreSQL client (optional, for local development)
 
-## Installation
+## What the Setup Script Does
 
-Install pnpm
+The `setup.sh` script automates the initial Heroku and Salesforce setup process:
+
+1. Creates a new Heroku app with unique timestamp naming
+2. Generates and configures JWT authentication keys
+3. Provisions PostgreSQL database
+4. (Optional) Adds Redis and Heroku AI for chat features
+5. Configures Salesforce integration and AppLink
+6. Sets up all required buildpacks
+7. Creates a complete `.env` file with all configurations
+
+## Local Development
+
+Install pnpm if you haven't already:
 
 ```sh
 corepack install -g pnpm@latest
@@ -25,96 +52,42 @@ corepack install -g pnpm@latest
 > [!NOTE]
 > If `corepack` is not installed you can run `npm install -g corepack`
 
-Install dependencies by running:
-
 > [!WARNING]
-> Don't mix `pnpm` and `npm`, `pnpm` is more performant and have better cache
+> Don't mix `pnpm` and `npm`, `pnpm` is more performant and has better cache
+
+## After running the setup script:
 
 ```sh
-pnpm install
+pnpm install             # Install dependencies
+node data/migration.js   # Run database migrations
+node data/seed.js        # Seed with demo data
+pnpm run dev             # Start development server
 ```
 
-Create an Heroku application with:
+The API will be available at `http://localhost:3000`
+
+## Deployment
+
+After setup is complete:
 
 ```sh
-heroku create <app-name>
+# Add git remote (if not already added)
+git remote add heroku https://git.heroku.com/<your-app-name>.git
+
+# Deploy to Heroku
+git push heroku main
+
+# Import API specification to Salesforce
+./scripts/applink-api.sh --app <your-app-name> --org <your-sf-org>
 ```
 
-Install the [Heroku PostgreSQL addon](https://elements.heroku.com/addons/heroku-postgresql):
+## API Documentation
 
-```sh
- heroku addons:create heroku-postgresql:essential-0 --app <your-heroku-app-name>
-```
+Once deployed, visit `/docs` to see the interactive Swagger documentation for all available endpoints.
 
-Install the [Heroku Key-Value Store addon](https://elements.heroku.com/addons/heroku-redis):
+## Local Database Setup
 
-```sh
-heroku addons:create heroku-redis:mini --app <your-heroku-app-name>
-```
-
-Install the [Heroku Inference addon](https://elements.heroku.com/addons/heroku-inference)
-
-> [!NOTE]
-> Make sure the Heroku AI CLI plugin is installed with `heroku plugins:install @heroku/plugin-ai`
-
-```sh
-heroku ai:models:create claude-3-7-sonnet --as inference -a <your-heroku-app-name>
-```
-
-Make sure to fetch the configuration to your local project by running:
-
-```sh
-heroku config --shell --app <your-heroku-app-name> > .env
-```
-
-Once the environment variables are set up, setup the database schema with:
-
-```sh
-node data/migration.js
-```
-
-### Salesforce Integration (Optional)
-
-If you plan to use the `/api/salesforce` routes, you need to configure Salesforce credentials for the demo user:
-
-1. Install the Salesforce CLI:
-
-   ```sh
-   npm install -g @salesforce/cli
-   ```
-
-2. Log in to your Salesforce org:
-
-   ```sh
-   sf org login web --alias my-org
-   ```
-
-3. Run the seed-user script to extract Salesforce org ID and user ID:
-
-   ```sh
-   ./scripts/seed-user.sh my-org
-   ```
-
-This will add the necessary Salesforce credentials to your `.env` file.
-
-Then seed the database with mock data by running:
-
-```sh
-node data/seed.js
-```
-
-> [!NOTE]
-> If you don't configure Salesforce credentials, the API will still work for non-Salesforce routes, but `/api/salesforce` endpoints will not function correctly.
-
-Run the project locally with:
-
-```sh
-pnpm run dev
-```
-
-## Local DB Setup
-
-Alternatively, you can use local dev databases:
+For local development without Heroku, you can use local databases:
 
 1. Install and start PostgreSQL locally
 
@@ -153,31 +126,19 @@ Alternatively, you can use local dev databases:
 
 ## Environment Variables
 
-Before running the project, you need to set up the environment variables.
+The setup script automatically configures all required environment variables. For manual configuration or customization, refer to [.env.sample](.env.sample).
 
-> [!NOTE]
-> For a complete list of required environment variables, please refer to the [sample .env file](.env.sample) included in the repository.
+Key environment variables:
 
-For JWT authentication you need a public/private key pair. You can generate these keys using OpenSSL by running:
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_URL` - Redis connection string (optional, for AI features)
+- `PRIVATE_KEY` / `PUBLIC_KEY` - JWT authentication keys
+- `INFERENCE_*` - Heroku AI configuration (when AI is enabled)
+- `SF_*` - Salesforce integration settings
 
-1.
+## Additional Resources
 
-```sh
-openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:2048
-```
-
-2.
-
-```sh
-openssl rsa -pubout -in private.key -out public.key
-```
-
-These commands will create two files (private.key and public.key) in your repository with the values stored inside.
-
-## Manual Deployment
-
-To manually deploy to Heroku you can run:
-
-```sh
-git push heroku main
-```
+- [README-DETAILED.md](README-DETAILED.md) - Complete manual setup guide with detailed explanations
+- [API Documentation](/docs) - Interactive Swagger UI (when running)
+- [Heroku Dev Center](https://devcenter.heroku.com/) - Heroku platform documentation
+- [Salesforce Developer](https://developer.salesforce.com/) - Salesforce integration resources

@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# AppLink Setup Script - Fetch YAML and import to Salesforce
+# AppLink API Import Script - Fetch OpenAPI spec and import/update in Salesforce
+# This utility can be run anytime to update the API specification in Salesforce
 
 set -e
 
 # Default values
 SERVER_URL="${SERVER_URL:-http://localhost:3000}"
 SF_ORG_ALIAS="${SF_ORG_ALIAS:-demo-org}"
-SF_APP_NAME="${SF_APP_NAME:-LuminaireAPI}"
+# Default SF_APP_NAME to APP_NAME if not explicitly set
+SF_APP_NAME="${SF_APP_NAME:-${APP_NAME:-LuminaireAPI}}"
 OUTPUT_FILE="api-docs.yaml"
 FILTER_ROUTES=""
 VERIFY=false
@@ -22,7 +24,7 @@ USAGE:
 OPTIONS:
     --server <url>     API server URL (default: http://localhost:3000)
     --org <alias>      Salesforce org alias (default: \$SF_ORG_ALIAS or 'demo-org')
-    --app <name>       App name in Salesforce (default: \$SF_APP_NAME or 'LuminaireAPI')
+    --app <name>       App name in Salesforce (default: \$SF_APP_NAME, \$APP_NAME, or 'LuminaireAPI')
     --output <file>    Output YAML file (default: api-docs.yaml)
     --filter <path>    Include only routes starting with path
     --verify           Test integration after import
