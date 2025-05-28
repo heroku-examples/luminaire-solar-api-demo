@@ -1,12 +1,12 @@
 mesh:
   authentication:
     bypassRoutes:
-      - /user
-      - /info
-      - /products
-      - /summary/:systemId
-      - /forecast/:systemId
-      - /healthcheck
+      - /api/user
+      - /api/info
+      - /api/products
+      - /api/summary/:systemId
+      - /api/forecast/:systemId
+      - /api/healthcheck
       - /api/salesforce/user
       - /api/salesforce/info
       - /api/salesforce/products
