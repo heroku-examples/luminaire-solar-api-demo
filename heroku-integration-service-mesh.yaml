@@ -2,6 +2,7 @@ mesh:
   authentication:
     bypassRoutes:
       - /api/user
+      - /api/user/authenticate
       - /api/info
       - /api/products
       - /api/summary/:systemId
