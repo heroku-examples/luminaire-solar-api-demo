@@ -448,4 +448,49 @@ export default async function (fastify, _opts) {
     */
     }
   );
+
+  /**
+   * Salesforce healthcheck endpoint - verifies AppLink is working
+   */
+  fastify.get(
+    '/salesforce/healthcheck',
+    {
+      config: {
+        salesforce: {
+          skipAuth: true,
+        },
+      },
+      schema: {
+        operationId: 'getSalesforceHealthcheck',
+        description:
+          'Health check endpoint for verifying AppLink integration is working correctly. This endpoint requires the x-client-context header that AppLink provides.',
+        tags: ['salesforce'],
+        response: {
+          200: {
+            description: 'AppLink integration is working correctly',
+            type: 'object',
+            properties: {
+              status: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+          500: {
+            description:
+              'AppLink integration error - likely missing x-client-context header',
+            $ref: 'error#',
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      // If we get here, the Salesforce middleware successfully parsed the x-client-context header
+      const { logger } = request.sdk;
+      logger.info('GET /salesforce/healthcheck - AppLink verified');
+
+      return reply.send({
+        status: 'OK',
+        message: 'AppLink integration verified',
+      });
+    }
+  );
 }

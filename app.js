@@ -164,6 +164,11 @@ export async function build(opts = {}) {
     return reply.redirect('/api-docs');
   });
 
+  // Basic healthcheck endpoint (no AppLink required)
+  fastify.get('/api/healthcheck', async (_request, reply) => {
+    return reply.send({ status: 'OK', message: 'Service is healthy' });
+  });
+
   // In Fastify 5, we should call ready() before returning the instance
   // to ensure all plugins are properly loaded
   await fastify.ready();

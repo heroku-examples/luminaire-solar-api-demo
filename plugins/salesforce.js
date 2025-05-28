@@ -148,11 +148,4 @@ export default fp(async function salesforcePlugin(fastify, _opts) {
       }
     }
   });
-
-  /**
-   * Healthcheck endpoint.
-   */
-  fastify.get('/healthcheck', async (_request, reply) => {
-    reply.status(200).send('OK');
-  });
 });
