@@ -272,14 +272,14 @@ This creates a secure connection between your Heroku app and Salesforce org, sto
 Add the buildpacks needed for AppLink and Node.js:
 
 ```bash
-# Add the service mesh buildpack (must be first)
-heroku buildpacks:add https://github.com/heroku/heroku-buildpack-heroku-integration-service-mesh --app <your-app-name>
-
-# Add the Node.js buildpack
+# IMPORTANT: Node.js buildpack must be added FIRST
 heroku buildpacks:add heroku/nodejs --app <your-app-name>
+
+# Then add the service mesh buildpack (it wraps the Node.js app)
+heroku buildpacks:add https://github.com/heroku/heroku-buildpack-heroku-integration-service-mesh --app <your-app-name>
 ```
 
-The service mesh buildpack must be added first so it can intercept and authenticate requests before they reach your application.
+**⚠️ CRITICAL**: The buildpack order matters! The Node.js buildpack must be first so it can install Node.js and your dependencies. The service mesh buildpack then wraps your Node.js application to handle AppLink authentication.
 
 ---
 
@@ -461,3 +461,75 @@ The script will:
 2. Create the required `x-client-context` header
 3. Send a request to your API endpoint
 4. Display the response
+
+## Troubleshooting
+
+### Heroku App Crashes After Deployment
+
+If your app crashes immediately after deployment with errors like:
+
+```
+Error executing command: exec: not started
+```
+
+This is likely a buildpack ordering issue. Check your logs:
+
+```bash
+heroku logs --tail --app <your-app-name>
+```
+
+To fix buildpack ordering:
+
+```bash
+# Clear all buildpacks
+heroku buildpacks:clear --app <your-app-name>
+
+# Add them in the correct order (Node.js FIRST!)
+heroku buildpacks:add heroku/nodejs --app <your-app-name>
+heroku buildpacks:add https://github.com/heroku/heroku-buildpack-heroku-integration-service-mesh --app <your-app-name>
+
+# Verify the order
+heroku buildpacks --app <your-app-name>
+
+# Deploy again
+git push heroku main
+```
+
+### x-client-context Header Errors Locally
+
+If you get a 401 in production or see errors from the server about missing `x-client-context` headers when running locally:
+
+```
+ERROR: Required x-client-context header not found
+```
+
+This typically happens when:
+
+1. In production: You aren't authenticated by AppLink and ServiceMesh is blocking you from the route you're trying.
+2. Testing Salesforce routes (e.g., `/salesforce/*`) without the proper headers
+3. A route has Salesforce configuration but shouldn't require the header
+
+### For local testing of Salesforce routes:
+
+Use the `get-jwt.sh` script and `api/user/authenticate` with demo credentials to get a token so you can make requests:
+
+```bash
+./scripts/get-jwt.sh http://localhost:3000/api/user/authenticate demo demo
+```
+
+This will save a jwt locally which will be used by the `invoke.sh` script to properly add the required headers:
+
+```bash
+./scripts/invoke.sh my-org http://localhost:3000/salesforce/products
+```
+
+### AppLink Import Failures
+
+If the API import to Salesforce fails:
+
+1. Ensure your server is running locally before running `./scripts/applink-api.sh`
+2. Check that your OpenAPI spec is valid at `http://localhost:3000/api-docs/yaml`
+3. Verify your Salesforce connection: `heroku salesforce:auth:list --app <your-app-name>`
+4. Check Heroku logs with `heroku logs --tail` and see "Heroku App Crashes After Deployment" above if you see crashes
+
+**Tip**: You can directly access the OpenAPI YAML specification at `http://localhost:3000/api-docs/yaml` instead of navigating through the Swagger UI.

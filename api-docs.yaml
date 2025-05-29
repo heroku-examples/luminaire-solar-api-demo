@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Luminaire Solar API
   description: Provides access to the Luminaire Solar API
-  version: '1.0'
+  version: "1.0"
 components:
   securitySchemes:
     BearerAuth:
@@ -13,10 +13,9 @@ components:
   schemas:
     user:
       type: object
-      description: >-
-        User account information for authentication and profile management. This
-        schema contains all personal details and credentials needed for system
-        access and user identification.
+      description: User account information for authentication and profile management.
+        This schema contains all personal details and credentials needed for
+        system access and user identification.
       properties:
         id:
           type: string
@@ -52,9 +51,8 @@ components:
         - username
     error:
       type: object
-      description: >-
-        Standardized error response format for API error handling. This schema
-        provides consistent error information including status codes and
+      description: Standardized error response format for API error handling. This
+        schema provides consistent error information including status codes and
         messages for troubleshooting and user feedback.
       properties:
         statusCode:
@@ -72,8 +70,7 @@ components:
         - message
     product:
       type: object
-      description: >-
-        Solar product information including details about available solar
+      description: Solar product information including details about available solar
         equipment and accessories. This schema contains all product
         specifications and pricing information for customer purchase decisions.
       properties:
@@ -102,10 +99,9 @@ components:
         - imageUrl
     system:
       type: object
-      description: >-
-        Represents a solar energy system installation with complete location
-        details. This schema contains all geographical information needed to
-        identify where a solar system is physically located.
+      description: Represents a solar energy system installation with complete
+        location details. This schema contains all geographical information
+        needed to identify where a solar system is physically located.
       properties:
         id:
           type: string
@@ -132,7 +128,7 @@ components:
         components:
           type: array
           items:
-            $ref: '#/components/schemas/systemComponent'
+            $ref: "#/components/schemas/systemComponent"
           description: List of system components within the solar system
       required:
         - address
@@ -180,10 +176,9 @@ components:
         - description
     metric:
       type: object
-      description: >-
-        Energy production and consumption metrics for a specific solar system at
-        a particular point in time. This schema tracks the energy performance
-        data that is essential for monitoring system efficiency.
+      description: Energy production and consumption metrics for a specific solar
+        system at a particular point in time. This schema tracks the energy
+        performance data that is essential for monitoring system efficiency.
       properties:
         id:
           type: string
@@ -195,9 +190,7 @@ components:
           description: Reference to the solar system that generated these metrics
         energy_produced:
           type: number
-          description: >-
-            Amount of energy produced by the solar system in kilowatt-hours
-            (kWh)
+          description: Amount of energy produced by the solar system in kilowatt-hours (kWh)
         energy_consumed:
           type: number
           description: Amount of energy consumed by the property in kilowatt-hours (kWh)
@@ -211,10 +204,9 @@ components:
         - energy_consumed
     summary:
       type: object
-      description: >-
-        Aggregated energy metrics summary for a specific date, providing totals
-        of energy production and consumption. This schema is used for reporting
-        and analysis of energy patterns over time.
+      description: Aggregated energy metrics summary for a specific date, providing
+        totals of energy production and consumption. This schema is used for
+        reporting and analysis of energy patterns over time.
       properties:
         date:
           type: string
@@ -222,35 +214,32 @@ components:
           description: The specific date for which this energy summary applies
         total_energy_produced:
           type: number
-          description: >-
-            Total energy produced by the solar system on this date in
+          description: Total energy produced by the solar system on this date in
             kilowatt-hours (kWh)
         total_energy_consumed:
           type: number
-          description: >-
-            Total energy consumed by the property on this date in kilowatt-hours
-            (kWh)
+          description: Total energy consumed by the property on this date in
+            kilowatt-hours (kWh)
       required:
         - total_energy_produced
         - total_energy_consumed
     allSummary:
       type: object
-      description: >-
-        Comprehensive collection of energy summaries across different time
+      description: Comprehensive collection of energy summaries across different time
         periods (daily, past week, past month). This schema provides a complete
         overview of energy performance for trend analysis and reporting.
       properties:
         daily:
           type: object
-          $ref: '#/components/schemas/summary'
+          $ref: "#/components/schemas/summary"
           description: Collection of daily energy summaries showing day-by-day performance
         weekly:
           type: object
-          $ref: '#/components/schemas/summary'
+          $ref: "#/components/schemas/summary"
           description: Weekly energy summary showing week-by-week performance
         monthly:
           type: object
-          $ref: '#/components/schemas/summary'
+          $ref: "#/components/schemas/summary"
           description: Monthly energy summary showing month-by-month performance
       required:
         - daily
@@ -332,10 +321,9 @@ paths:
       operationId: authenticate
       tags:
         - users
-      description: >-
-        Authenticates a user by validating their credentials and issues a secure
-        JWT token for subsequent API access. This endpoint handles user login,
-        verifies the provided username and password, and returns an
+      description: Authenticates a user by validating their credentials and issues a
+        secure JWT token for subsequent API access. This endpoint handles user
+        login, verifies the provided username and password, and returns an
         authorization token that must be included in future requests to access
         protected resources.
       requestBody:
@@ -358,25 +346,21 @@ paths:
         required: true
         description: User credentials required for authentication
       responses:
-        '200':
-          description: >-
-            Authentication successful. Returns a JWT token that must be included
-            in the Authorization header for subsequent API requests to access
-            protected resources.
+        "200":
+          description: Authentication successful. Returns a JWT token that must be
+            included in the Authorization header for subsequent API requests to
+            access protected resources.
           content:
             application/json:
               schema:
-                description: >-
-                  Authentication successful. Returns a JWT token that must be
+                description: Authentication successful. Returns a JWT token that must be
                   included in the Authorization header for subsequent API
                   requests to access protected resources.
                 type: object
                 properties:
                   authorization:
                     type: string
-                    description: >-
-                      JWT token to be used for authenticating subsequent API
-                      requests
+                    description: JWT token to be used for authenticating subsequent API requests
                   user:
                     type: object
                     description: User details including Salesforce integration information
@@ -402,102 +386,90 @@ paths:
                       email:
                         type: string
                         description: User's email address
-        '401':
-          description: >-
-            Authentication failed due to invalid credentials. This occurs when
+        "401":
+          description: Authentication failed due to invalid credentials. This occurs when
             the provided username doesn't exist or the password is incorrect.
           content:
             application/json:
               schema:
-                description: >-
-                  Authentication failed due to invalid credentials. This occurs
-                  when the provided username doesn't exist or the password is
+                description: Authentication failed due to invalid credentials. This occurs when
+                  the provided username doesn't exist or the password is
                   incorrect.
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/user/register:
     post:
       operationId: register
       tags:
         - users
-      description: >-
-        Registers a new user account in the system with the provided personal
-        information and credentials. This endpoint creates a new user profile,
-        securely stores the password, and establishes the user's identity for
-        future authentication and access to solar system monitoring features.
+      description: Registers a new user account in the system with the provided
+        personal information and credentials. This endpoint creates a new user
+        profile, securely stores the password, and establishes the user's
+        identity for future authentication and access to solar system monitoring
+        features.
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/user'
-              description: >-
-                Complete user profile information required for registration
+              $ref: "#/components/schemas/user"
+              description: Complete user profile information required for registration
                 including personal details and account credentials
-        description: >-
-          Complete user profile information required for registration including
-          personal details and account credentials
+        description: Complete user profile information required for registration
+          including personal details and account credentials
       responses:
-        '200':
-          description: >-
-            User registration successful. Returns the newly created user profile
-            information (excluding sensitive data like password) to confirm the
-            account creation.
+        "200":
+          description: User registration successful. Returns the newly created user
+            profile information (excluding sensitive data like password) to
+            confirm the account creation.
           content:
             application/json:
               schema:
-                description: >-
-                  User registration successful. Returns the newly created user
+                description: User registration successful. Returns the newly created user
                   profile information (excluding sensitive data like password)
                   to confirm the account creation.
-                $ref: '#/components/schemas/user'
+                $ref: "#/components/schemas/user"
   /api/products:
     get:
       operationId: getAllProducts
       tags:
         - products
-      description: >-
-        Retrieves a comprehensive catalog of all available solar products and
-        equipment in the system. This endpoint provides complete product
+      description: Retrieves a comprehensive catalog of all available solar products
+        and equipment in the system. This endpoint provides complete product
         information including names, descriptions, images, and pricing to help
         customers make informed purchasing decisions.
       responses:
-        '200':
-          description: >-
-            Successfully retrieved the complete list of solar products and
+        "200":
+          description: Successfully retrieved the complete list of solar products and
             equipment with all details including names, descriptions, images,
             and pricing information.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved the complete list of solar products and
+                description: Successfully retrieved the complete list of solar products and
                   equipment with all details including names, descriptions,
                   images, and pricing information.
                 type: array
                 items:
-                  $ref: '#/components/schemas/product'
-        '500':
-          description: >-
-            Server encountered an unexpected error while retrieving product
+                  $ref: "#/components/schemas/product"
+        "500":
+          description: Server encountered an unexpected error while retrieving product
             data. The error details provide information about what went wrong
             during the operation.
           content:
             application/json:
               schema:
-                description: >-
-                  Server encountered an unexpected error while retrieving
-                  product data. The error details provide information about what
-                  went wrong during the operation.
-                $ref: '#/components/schemas/error'
+                description: Server encountered an unexpected error while retrieving product
+                  data. The error details provide information about what went
+                  wrong during the operation.
+                $ref: "#/components/schemas/error"
   /api/products/{id}:
     get:
       operationId: getProductById
       tags:
         - products
-      description: >-
-        Retrieves detailed information about a specific solar product by its
-        unique identifier. This endpoint provides comprehensive product details
-        including name, description, image, pricing, and product code for a
-        single product item.
+      description: Retrieves detailed information about a specific solar product by
+        its unique identifier. This endpoint provides comprehensive product
+        details including name, description, image, pricing, and product code
+        for a single product item.
       parameters:
         - schema:
             type: string
@@ -506,83 +478,73 @@ paths:
           required: true
           description: Unique identifier (UUID) of the specific solar product to retrieve
       responses:
-        '200':
-          description: >-
-            Successfully retrieved the requested solar product with complete
+        "200":
+          description: Successfully retrieved the requested solar product with complete
             details including name, description, image, pricing, and product
             code.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved the requested solar product with
-                  complete details including name, description, image, pricing,
-                  and product code.
-                $ref: '#/components/schemas/product'
-        '404':
-          description: >-
-            The requested solar product could not be found. This may occur if
+                description: Successfully retrieved the requested solar product with complete
+                  details including name, description, image, pricing, and
+                  product code.
+                $ref: "#/components/schemas/product"
+        "404":
+          description: The requested solar product could not be found. This may occur if
             the product ID is invalid or if the product has been removed from
             the catalog.
           content:
             application/json:
               schema:
-                description: >-
-                  The requested solar product could not be found. This may occur
-                  if the product ID is invalid or if the product has been
-                  removed from the catalog.
-                $ref: '#/components/schemas/error'
+                description: The requested solar product could not be found. This may occur if
+                  the product ID is invalid or if the product has been removed
+                  from the catalog.
+                $ref: "#/components/schemas/error"
   /api/systems:
     get:
       operationId: getAllSystems
       tags:
         - systems
-      description: >-
-        Retrieves all solar energy systems registered to the authenticated user.
-        This endpoint provides a comprehensive list of all solar installations
-        the user has access to, including their complete location details and
-        system identifiers. This information is essential for monitoring
-        multiple solar installations across different locations.
+      description: Retrieves all solar energy systems registered to the authenticated
+        user. This endpoint provides a comprehensive list of all solar
+        installations the user has access to, including their complete location
+        details and system identifiers. This information is essential for
+        monitoring multiple solar installations across different locations.
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: >-
-            Successfully retrieved all solar systems associated with the
+        "200":
+          description: Successfully retrieved all solar systems associated with the
             authenticated user. The response includes complete location details
             for each system including address, city, state, zip code, and
             country.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved all solar systems associated with the
+                description: Successfully retrieved all solar systems associated with the
                   authenticated user. The response includes complete location
                   details for each system including address, city, state, zip
                   code, and country.
                 type: array
                 items:
-                  $ref: '#/components/schemas/system'
-        '500':
-          description: >-
-            Server encountered an unexpected error while retrieving solar system
-            data. This may occur due to database connectivity issues or
+                  $ref: "#/components/schemas/system"
+        "500":
+          description: Server encountered an unexpected error while retrieving solar
+            system data. This may occur due to database connectivity issues or
             authentication problems.
           content:
             application/json:
               schema:
-                description: >-
-                  Server encountered an unexpected error while retrieving solar
+                description: Server encountered an unexpected error while retrieving solar
                   system data. This may occur due to database connectivity
                   issues or authentication problems.
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/metrics/{systemId}:
     get:
       operationId: getMetricsBySystem
       tags:
         - metrics
-      description: >-
-        Retrieves detailed energy production and consumption metrics for a
+      description: Retrieves detailed energy production and consumption metrics for a
         specific solar system. This endpoint provides time-series data showing
         how much energy the system has produced and how much energy the property
         has consumed, allowing for performance analysis and efficiency
@@ -594,8 +556,7 @@ paths:
           in: query
           name: date
           required: false
-          description: >-
-            Filter metrics to this specific date (YYYY-MM-DD format). If not
+          description: Filter metrics to this specific date (YYYY-MM-DD format). If not
             provided, defaults to current date.
         - schema:
             type: string
@@ -606,47 +567,42 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: >-
-            Successfully retrieved energy metrics for the specified solar
+        "200":
+          description: Successfully retrieved energy metrics for the specified solar
             system. The response includes time-series data with energy
             production and consumption values, along with the exact timestamps
             when measurements were taken.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved energy metrics for the specified solar
+                description: Successfully retrieved energy metrics for the specified solar
                   system. The response includes time-series data with energy
                   production and consumption values, along with the exact
                   timestamps when measurements were taken.
                 type: array
                 items:
-                  $ref: '#/components/schemas/metric'
-        '500':
-          description: >-
-            Server encountered an unexpected error while retrieving metric data.
-            This may occur due to database connectivity issues, invalid system
-            ID, or data integrity problems.
+                  $ref: "#/components/schemas/metric"
+        "500":
+          description: Server encountered an unexpected error while retrieving metric
+            data. This may occur due to database connectivity issues, invalid
+            system ID, or data integrity problems.
           content:
             application/json:
               schema:
-                description: >-
-                  Server encountered an unexpected error while retrieving metric
+                description: Server encountered an unexpected error while retrieving metric
                   data. This may occur due to database connectivity issues,
                   invalid system ID, or data integrity problems.
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/summary/{systemId}:
     get:
       operationId: getMetricsSummaryBySystem
       tags:
         - metrics
-      description: >-
-        Retrieves aggregated energy summaries for a solar system across multiple
-        time periods (daily, past week, past month). This endpoint provides a
-        comprehensive overview of energy production and consumption patterns,
-        enabling trend analysis and performance evaluation over different
-        timeframes.
+      description: Retrieves aggregated energy summaries for a solar system across
+        multiple time periods (daily, past week, past month). This endpoint
+        provides a comprehensive overview of energy production and consumption
+        patterns, enabling trend analysis and performance evaluation over
+        different timeframes.
       parameters:
         - schema:
             type: string
@@ -654,49 +610,43 @@ paths:
           in: query
           name: date
           required: false
-          description: >-
-            Reference date (YYYY-MM-DD format) for generating summaries. If not
+          description: Reference date (YYYY-MM-DD format) for generating summaries. If not
             provided, defaults to current date.
         - schema:
             type: string
           in: path
           name: systemId
           required: true
-          description: >-
-            Unique identifier (UUID) of the solar system to retrieve summary
+          description: Unique identifier (UUID) of the solar system to retrieve summary
             data for
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: >-
-            Successfully retrieved energy summaries for the specified solar
+        "200":
+          description: Successfully retrieved energy summaries for the specified solar
             system. The response includes aggregated data organized into daily,
             weekly, and monthly collections, each containing total energy
             production and consumption values.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved energy summaries for the specified
-                  solar system. The response includes aggregated data organized
-                  into daily, weekly, and monthly collections, each containing
-                  total energy production and consumption values.
+                description: Successfully retrieved energy summaries for the specified solar
+                  system. The response includes aggregated data organized into
+                  daily, weekly, and monthly collections, each containing total
+                  energy production and consumption values.
                 type: object
-                $ref: '#/components/schemas/allSummary'
-        '500':
-          description: >-
-            Server encountered an unexpected error while generating summary
+                $ref: "#/components/schemas/allSummary"
+        "500":
+          description: Server encountered an unexpected error while generating summary
             data. This may occur due to database connectivity issues,
             insufficient metric data, or calculation errors.
           content:
             application/json:
               schema:
-                description: >-
-                  Server encountered an unexpected error while generating
-                  summary data. This may occur due to database connectivity
-                  issues, insufficient metric data, or calculation errors.
-                $ref: '#/components/schemas/error'
+                description: Server encountered an unexpected error while generating summary
+                  data. This may occur due to database connectivity issues,
+                  insufficient metric data, or calculation errors.
+                $ref: "#/components/schemas/error"
   /api/system/{systemId}:
     get:
       tags:
@@ -711,21 +661,21 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Details of the system
           content:
             application/json:
               schema:
                 description: Details of the system
                 type: object
-                $ref: '#/components/schemas/system'
-        '500':
+                $ref: "#/components/schemas/system"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 description: Internal Server Error
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/system/{systemId}/activityHistory:
     get:
       tags:
@@ -740,21 +690,21 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: The activity history for a system
           content:
             application/json:
               schema:
                 description: The activity history for a system
                 type: object
-                $ref: '#/components/schemas/activityHistory'
-        '500':
+                $ref: "#/components/schemas/activityHistory"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 description: Internal Server Error
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/system/{systemId}/weather:
     get:
       tags:
@@ -769,21 +719,21 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: The weather data
           content:
             application/json:
               schema:
                 description: The weather data
                 type: object
-                $ref: '#/components/schemas/systemWeather'
-        '500':
+                $ref: "#/components/schemas/systemWeather"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 description: Internal Server Error
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/forecast/{systemId}:
     get:
       tags:
@@ -796,7 +746,7 @@ paths:
           name: systemId
           required: true
       responses:
-        '200':
+        "200":
           description: Weekly forecast for the system
           content:
             application/json:
@@ -804,21 +754,20 @@ paths:
                 description: Weekly forecast for the system
                 type: array
                 items:
-                  $ref: '#/components/schemas/forecast'
-        '500':
+                  $ref: "#/components/schemas/forecast"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
                 description: Internal Server Error
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/webhook:
     post:
       operationId: receiveWebhook
       tags:
         - webhooks
-      description: >-
-        Receives external webhook notifications from integrated systems and
+      description: Receives external webhook notifications from integrated systems and
         services. This endpoint acts as a general-purpose listener for events
         from third-party services, processing incoming data and triggering
         appropriate actions within the solar monitoring system.
@@ -831,14 +780,12 @@ paths:
               additionalProperties: true
         description: Webhook payload containing event data from external systems
       responses:
-        '200':
+        "200":
           description: Successfully received and acknowledged the webhook notification
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully received and acknowledged the webhook
-                  notification
+                description: Successfully received and acknowledged the webhook notification
                 type: object
                 properties:
                   status:
@@ -849,23 +796,20 @@ paths:
       operationId: receiveNotification
       tags:
         - notifications
-      description: >-
-        Receives notification events specifically related to solar system status
-        changes or alerts. This endpoint processes important updates about
-        system performance, maintenance needs, or critical alerts that require
-        attention.
+      description: Receives notification events specifically related to solar system
+        status changes or alerts. This endpoint processes important updates
+        about system performance, maintenance needs, or critical alerts that
+        require attention.
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              description: >-
-                Notification payload containing alert or status update
-                information
+              description: Notification payload containing alert or status update information
               additionalProperties: true
         description: Notification payload containing alert or status update information
       responses:
-        '200':
+        "200":
           description: Successfully received and processed the notification
           content:
             application/json:
@@ -881,64 +825,57 @@ paths:
       operationId: getSalesforceUser
       tags:
         - salesforce
-      description: >-
-        Get authenticated user information including associated Salesforce
+      description: Get authenticated user information including associated Salesforce
         org/userid for integration with Salesforce services via AppLink.
       responses:
-        '200':
-          description: >-
-            Successfully retrieved authenticated user information with
+        "200":
+          description: Successfully retrieved authenticated user information with
             Salesforce organization and user identifiers for integration with
             Salesforce services via AppLink.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved authenticated user information with
+                description: Successfully retrieved authenticated user information with
                   Salesforce organization and user identifiers for integration
                   with Salesforce services via AppLink.
-                $ref: '#/components/schemas/salesforceUser'
-        '401':
+                $ref: "#/components/schemas/salesforceUser"
+        "401":
           description: Authentication failed due to missing or invalid JWT token
           content:
             application/json:
               schema:
                 description: Authentication failed due to missing or invalid JWT token
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/salesforce/info:
     get:
       operationId: getSalesforceInfo
       tags:
         - salesforce
-      description: >-
-        Get detailed company information and services offered for Salesforce
-        integration.
+      description: Get detailed company information and services offered for
+        Salesforce integration.
       responses:
-        '200':
-          description: >-
-            Successfully retrieved company information and services offered,
+        "200":
+          description: Successfully retrieved company information and services offered,
             formatted for Salesforce integration.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved company information and services
-                  offered, formatted for Salesforce integration.
-                $ref: '#/components/schemas/salesforceInfo'
-        '500':
+                description: Successfully retrieved company information and services offered,
+                  formatted for Salesforce integration.
+                $ref: "#/components/schemas/salesforceInfo"
+        "500":
           description: Server error occurred while retrieving company information
           content:
             application/json:
               schema:
                 description: Server error occurred while retrieving company information
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/salesforce/products:
     get:
       operationId: getSalesforceProducts
       tags:
         - salesforce
-      description: >-
-        Get complete product catalog formatted for Salesforce integration,
+      description: Get complete product catalog formatted for Salesforce integration,
         including solar panels, batteries, and related equipment.
       parameters:
         - schema:
@@ -948,40 +885,37 @@ paths:
           required: false
           description: Optional filter parameter to filter products by some criteria
       responses:
-        '200':
-          description: >-
-            Successfully retrieved product catalog information as a JSON string
+        "200":
+          description: Successfully retrieved product catalog information as a JSON string
             for Salesforce integration.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved product catalog information as a JSON
-                  string for Salesforce integration.
-                $ref: '#/components/schemas/salesforceProducts'
-        '500':
+                description: Successfully retrieved product catalog information as a JSON string
+                  for Salesforce integration.
+                $ref: "#/components/schemas/salesforceProducts"
+        "500":
           description: Server error occurred while retrieving product catalog
           content:
             application/json:
               schema:
                 description: Server error occurred while retrieving product catalog
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/salesforce/summary/{systemId}:
     get:
       operationId: getSalesforceMetricsSummary
       tags:
         - salesforce
-      description: >-
-        Get comprehensive metrics summary for a specific solar system, including
-        daily, weekly, and monthly energy production and consumption data.
+      description: Get comprehensive metrics summary for a specific solar system,
+        including daily, weekly, and monthly energy production and consumption
+        data.
       parameters:
         - schema:
             type: string
           in: query
           name: date
           required: false
-          description: >-
-            Optional date parameter to retrieve metrics for a specific date. If
+          description: Optional date parameter to retrieve metrics for a specific date. If
             not provided, current date is used.
         - schema:
             type: string
@@ -990,57 +924,51 @@ paths:
           required: true
           description: Unique identifier of the solar system to get metrics for
       responses:
-        '200':
-          description: >-
-            Successfully retrieved energy metrics summary for the specified
+        "200":
+          description: Successfully retrieved energy metrics summary for the specified
             system, formatted for Salesforce integration.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved energy metrics summary for the
-                  specified system, formatted for Salesforce integration.
-                $ref: '#/components/schemas/salesforceSummary'
-        '401':
+                description: Successfully retrieved energy metrics summary for the specified
+                  system, formatted for Salesforce integration.
+                $ref: "#/components/schemas/salesforceSummary"
+        "401":
           description: Authentication failed due to missing or invalid JWT token
           content:
             application/json:
               schema:
                 description: Authentication failed due to missing or invalid JWT token
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: System not found or no metrics available for the specified system
           content:
             application/json:
               schema:
-                description: >-
-                  System not found or no metrics available for the specified
-                  system
-                $ref: '#/components/schemas/error'
-        '500':
+                description: System not found or no metrics available for the specified system
+                $ref: "#/components/schemas/error"
+        "500":
           description: Server error occurred while retrieving system metrics
           content:
             application/json:
               schema:
                 description: Server error occurred while retrieving system metrics
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
   /api/salesforce/forecast/{systemId}:
     get:
       operationId: getSalesforceForecast
       tags:
         - salesforce
-      description: >-
-        Get energy production forecast for a specific solar system, providing
-        predicted energy generation based on weather patterns and system
-        capabilities.
+      description: Get energy production forecast for a specific solar system,
+        providing predicted energy generation based on weather patterns and
+        system capabilities.
       parameters:
         - schema:
             type: string
           in: query
           name: date
           required: false
-          description: >-
-            Optional date parameter to retrieve forecast from a specific date.
+          description: Optional date parameter to retrieve forecast from a specific date.
             If not provided, current date is used.
         - schema:
             type: string
@@ -1049,37 +977,61 @@ paths:
           required: true
           description: Unique identifier of the solar system to get forecast for
       responses:
-        '200':
-          description: >-
-            Successfully retrieved energy forecast for the specified system,
+        "200":
+          description: Successfully retrieved energy forecast for the specified system,
             formatted for Salesforce integration.
           content:
             application/json:
               schema:
-                description: >-
-                  Successfully retrieved energy forecast for the specified
-                  system, formatted for Salesforce integration.
-                $ref: '#/components/schemas/salesforceForecast'
-        '401':
+                description: Successfully retrieved energy forecast for the specified system,
+                  formatted for Salesforce integration.
+                $ref: "#/components/schemas/salesforceForecast"
+        "401":
           description: Authentication failed due to missing or invalid JWT token
           content:
             application/json:
               schema:
                 description: Authentication failed due to missing or invalid JWT token
-                $ref: '#/components/schemas/error'
-        '404':
+                $ref: "#/components/schemas/error"
+        "404":
           description: System not found or no forecast available for the specified system
           content:
             application/json:
               schema:
-                description: >-
-                  System not found or no forecast available for the specified
-                  system
-                $ref: '#/components/schemas/error'
-        '500':
+                description: System not found or no forecast available for the specified system
+                $ref: "#/components/schemas/error"
+        "500":
           description: Server error occurred while retrieving system forecast
           content:
             application/json:
               schema:
                 description: Server error occurred while retrieving system forecast
-                $ref: '#/components/schemas/error'
+                $ref: "#/components/schemas/error"
+  /api/salesforce/healthcheck:
+    get:
+      operationId: getSalesforceHealthcheck
+      tags:
+        - salesforce
+      description: Health check endpoint for verifying AppLink integration is working
+        correctly. This endpoint requires the x-client-context header that
+        AppLink provides.
+      responses:
+        "200":
+          description: AppLink integration is working correctly
+          content:
+            application/json:
+              schema:
+                description: AppLink integration is working correctly
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+        "500":
+          description: AppLink integration error - likely missing x-client-context header
+          content:
+            application/json:
+              schema:
+                description: AppLink integration error - likely missing x-client-context header
+                $ref: "#/components/schemas/error"

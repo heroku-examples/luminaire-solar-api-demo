@@ -243,10 +243,12 @@ echo ""
 
 # Step 11: Add buildpacks
 echo -e "${YELLOW}Step 11: Adding buildpacks...${NC}"
-heroku buildpacks:add https://github.com/heroku/heroku-buildpack-heroku-integration-service-mesh --app "$APP_NAME"
-echo "✓ Service mesh buildpack added"
+# Node.js buildpack must be added FIRST
 heroku buildpacks:add heroku/nodejs --app "$APP_NAME"
 echo "✓ Node.js buildpack added"
+# Service mesh buildpack wraps the Node.js app
+heroku buildpacks:add https://github.com/heroku/heroku-buildpack-heroku-integration-service-mesh --app "$APP_NAME"
+echo "✓ Service mesh buildpack added"
 echo ""
 
 echo -e "${GREEN}=== Setup Complete! ===${NC}"
