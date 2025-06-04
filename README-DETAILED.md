@@ -32,6 +32,14 @@ This guide provides detailed step-by-step instructions for setting up the Lumina
 - [Heroku AI CLI plugin](https://devcenter.heroku.com/articles/heroku-inference#install-the-cli-plugin)
 - Redis (for chat memory)
 
+### Required for AppLink Setup
+
+Install the Heroku Integration plugin for AppLink commands:
+
+```bash
+heroku plugins:install @heroku-cli/plugin-integration
+```
+
 ### Accounts Required
 
 - [Heroku account](https://signup.heroku.com/)

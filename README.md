@@ -2,6 +2,8 @@
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
+> **Related Repository**: [Luminaire Solar UI Demo](https://github.com/heroku-examples/luminaire-solar-ui-demo)
+
 A demo API showcasing Heroku features including PostgreSQL, Redis, AI inference, and Salesforce integration via AppLink.
 
 ## Quick Start
