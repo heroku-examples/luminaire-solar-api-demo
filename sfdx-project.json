@@ -1,0 +1,12 @@
+{
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "63.0",
+  "packageDirectories": [
+    {
+      "path": "agentforce",
+      "default": true
+    }
+  ],
+  "name": "lumina-solar-agentforce"
+}
