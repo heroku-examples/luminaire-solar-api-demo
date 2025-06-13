@@ -42,9 +42,7 @@ export default async function (fastify, _opts) {
     '/salesforce/user',
     {
       config: {
-        salesforce: {
-          skipAuth: false, // This requires JWT authentication
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceUser',
@@ -89,9 +87,7 @@ export default async function (fastify, _opts) {
     '/salesforce/info',
     {
       config: {
-        salesforce: {
-          skipAuth: true,
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceInfo',
@@ -147,9 +143,7 @@ export default async function (fastify, _opts) {
     '/salesforce/products',
     {
       config: {
-        salesforce: {
-          skipAuth: true,
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceProducts',
@@ -235,11 +229,8 @@ export default async function (fastify, _opts) {
   fastify.get(
     '/salesforce/summary/:systemId',
     {
-      // TODO: verify in the UI that disabling skipAuth works
       config: {
-        salesforce: {
-          skipAuth: false,
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceMetricsSummary',
@@ -349,11 +340,8 @@ export default async function (fastify, _opts) {
   fastify.get(
     '/salesforce/forecast/:systemId',
     {
-      // TODO: verify in the UI that disabling skipAuth works
       config: {
-        salesforce: {
-          skipAuth: false,
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceForecast',
@@ -456,9 +444,7 @@ export default async function (fastify, _opts) {
     '/salesforce/healthcheck',
     {
       config: {
-        salesforce: {
-          skipAuth: true,
-        },
+        salesforce: {},
       },
       schema: {
         operationId: 'getSalesforceHealthcheck',
