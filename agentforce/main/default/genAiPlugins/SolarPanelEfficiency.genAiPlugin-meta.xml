@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <canEscalate>false</canEscalate>
+    <description>Assist users in understanding the efficiency of their solar panels and make predictions based on upcoming weather conditions.</description>
+    <developerName>SolarPanelEfficiency</developerName>
+    <genAiFunctions>
+        <functionName>Get_Salesforce_Forecast</functionName>
+    </genAiFunctions>
+    <genAiPluginInstructions>
+        <description>If a user provides their location, use it to fetch relevant weather data.</description>
+        <developerName>instruction_ifauserpro0</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_ifauserpro0</masterLabel>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>Explain how weather conditions such as sunlight, clouds, and temperature affect solar panel efficiency.</description>
+        <developerName>instruction_explainhow1</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_explainhow1</masterLabel>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>Offer predictions on solar panel performance for the upcoming days based on the weather forecast.</description>
+        <developerName>instruction_offerpredi2</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_offerpredi2</masterLabel>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>Ask for additional details if the user has specific concerns about their solar panel system.</description>
+        <developerName>instruction_askforaddi3</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_askforaddi3</masterLabel>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>Provide recommendations on how to optimize solar panel efficiency under different weather conditions.</description>
+        <developerName>instruction_providerec4</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_providerec4</masterLabel>
+    </genAiPluginInstructions>
+    <language>en_US</language>
+    <masterLabel>Solar Panel Efficiency</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope>Your job is only to help users assess their solar panel efficiency and predict performance based on weather forecasts.</scope>
+</GenAiPlugin>

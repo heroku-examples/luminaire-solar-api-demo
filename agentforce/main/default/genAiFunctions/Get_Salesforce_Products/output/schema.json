@@ -1,0 +1,42 @@
+{
+  "unevaluatedProperties": false,
+  "properties": {
+    "200": {
+      "title": "200",
+      "description": "Successfully retrieved product catalog information as a JSON string for Salesforce integration.",
+      "lightning:type": "@apexClassType/ExternalService__LuminaireService_salesforceProducts",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": true,
+      "copilotAction:isUsedByPlanner": true,
+      "copilotAction:useHydratedPrompt": false
+    },
+    "responseCode": {
+      "title": "Response Code",
+      "description": "response code",
+      "lightning:type": "lightning__integerType",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": false,
+      "copilotAction:isUsedByPlanner": true,
+      "copilotAction:useHydratedPrompt": false
+    },
+    "500Exc": {
+      "title": "500 Exception",
+      "description": "Server error occurred while retrieving product catalog",
+      "lightning:type": "@apexClassType/ExternalService__LuminaireService_error",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": false,
+      "copilotAction:isUsedByPlanner": true,
+      "copilotAction:useHydratedPrompt": false
+    },
+    "defaultExc": {
+      "title": "Default Exception",
+      "description": "Default response",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": false,
+      "copilotAction:isUsedByPlanner": true,
+      "copilotAction:useHydratedPrompt": false
+    }
+  },
+  "lightning:type": "lightning__objectType"
+}

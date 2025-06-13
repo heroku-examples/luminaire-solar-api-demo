@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <canEscalate>false</canEscalate>
+    <description>Provide information regarding Luminaire Solar products and services. This includes details about product features, service availability, and support options.</description>
+    <developerName>Product_and_Service_Information</developerName>
+    <genAiFunctions>
+        <functionName>Get_Salesforce_Products</functionName>
+    </genAiFunctions>
+    <genAiPluginInstructions>
+        <description>If a user inquires about product features, provide detailed descriptions of the relevant Luminaire Solar products.</description>
+        <developerName>instruction_ifauserinq0</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_ifauserinq0</masterLabel>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>Gather as much information as possible from the user by asking clarifying questions to provide accurate responses.</description>
+        <developerName>instruction_gatherasmu1</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_gatherasmu1</masterLabel>
+    </genAiPluginInstructions>
+    <language>en_US</language>
+    <masterLabel>Product and Service Information</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope>Your job is only to provide accurate and detailed information about Luminaire Solar products and services. You should not offer technical support or handle order management tasks.</scope>
+</GenAiPlugin>

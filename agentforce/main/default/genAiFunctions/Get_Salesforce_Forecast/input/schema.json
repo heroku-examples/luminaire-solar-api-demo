@@ -1,0 +1,21 @@
+{
+  "required": ["systemId"],
+  "unevaluatedProperties": false,
+  "properties": {
+    "date": {
+      "title": "Date",
+      "description": "Optional date parameter to retrieve forecast from a specific date. If not provided, current date is used.",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isUserInput": false
+    },
+    "systemId": {
+      "title": "System Id",
+      "description": "Unique identifier of the solar system to get forecast for",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isUserInput": false
+    }
+  },
+  "lightning:type": "lightning__objectType"
+}
