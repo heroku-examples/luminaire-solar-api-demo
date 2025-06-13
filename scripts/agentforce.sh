@@ -8,6 +8,9 @@ API_VERSION="63.0"
 
 # Metadata types to retrieve/delete
 METADATA_TYPES=(
+  "Bot"
+  "BotVersion"
+  "GenAIPlannerBundle"
   "GenAiFunction"
   "GenAiPlugin"
   "GenAiPlanner"
