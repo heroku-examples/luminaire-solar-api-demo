@@ -3,6 +3,10 @@ logs
 *.log
 npm-debug.log*
 
+# Salesforce DX
+.sf
+.sfdx
+
 # Runtime data
 pids
 *.pid
