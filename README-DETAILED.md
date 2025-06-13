@@ -541,3 +541,11 @@ If the API import to Salesforce fails:
 4. Check Heroku logs with `heroku logs --tail` and see "Heroku App Crashes After Deployment" above if you see crashes
 
 **Tip**: You can directly access the OpenAPI YAML specification at `http://localhost:3000/api-docs/yaml` instead of navigating through the Swagger UI.
+
+### Making Changes in AgentBuilder and/or Luminiare Solar API Definition
+
+If you have modified the **Agent, Topics or created new Actions** within the Salesforce Setup UI run `/scripts/agentforce.sh retrieve <your-org-alias>`. This will download in metadata form the latest changes in to the `/agentforce` folder. Review the files fully before committing.
+
+If you have modified the **Luminiare Solar API**, specifically operations used by Agentforce Actions, you will need to remove the Agentforce Configuration from the org using `/scripts/agentforce.sh delete <your-org-alias>` (be sure to run the above retrieve before hand if needed) before reimporting the Heroku application per the instructions above. Once you have reimported use `/scripts/agentforce.sh deploy <your-org-alias>` to reapply the Agentforce configuration.
+
+**Tip**: If you have changed operation, or parameter names, the `agentforce.sh deploy` will fail. In this case review the metadata files and make changes to directly to them to adjust names and referneces. If you have added a new operation, it is recommended after deploying the prior configuraiton, you use the Agentforce Actions UI to create your action then retrieve the metadata.
