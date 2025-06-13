@@ -542,10 +542,30 @@ If the API import to Salesforce fails:
 
 **Tip**: You can directly access the OpenAPI YAML specification at `http://localhost:3000/api-docs/yaml` instead of navigating through the Swagger UI.
 
-### Making Changes in AgentBuilder and/or Luminiare Solar API Definition
+### Error Importing Heroku Application
 
-If you have modified the **Agent, Topics or created new Actions** within the Salesforce Setup UI run `/scripts/agentforce.sh retrieve <your-org-alias>`. This will download in metadata form the latest changes in to the `/agentforce` folder. Review the files fully before committing.
+Error re-importing Heorku application into an org:
 
-If you have modified the **Luminiare Solar API**, specifically operations used by Agentforce Actions, you will need to remove the Agentforce Configuration from the org using `/scripts/agentforce.sh delete <your-org-alias>` (be sure to run the above retrieve before hand if needed) before reimporting the Heroku application per the instructions above. Once you have reimported use `/scripts/agentforce.sh deploy <your-org-alias>` to reapply the Agentforce configuration.
+```
+heroku salesforce:import api-docs.yaml --org-name my-org --client-name LuminaireService
+>   Error: app_import_failed
+>   There was a problem importing your Heroku App to your Salesforce Org. Please try again later.
+```
 
-**Tip**: If you have changed operation, or parameter names, the `agentforce.sh deploy` will fail. In this case review the metadata files and make changes to directly to them to adjust names and referneces. If you have added a new operation, it is recommended after deploying the prior configuraiton, you use the Agentforce Actions UI to create your action then retrieve the metadata.
+When you view the deploy report under **Deployment Status** under **Setup** you see
+
+```
+Can't delete this external service as it's referenced in a flow. Remove the external service action from the flow and try again.
+```
+
+This typically occurs because the API operations or schemas have changed. Review the process described in the next section to remove the dependenices.
+
+### Making Changes in AgentBuilder and/or Luminaire Solar API Definition
+
+Be aware that is important to use a consistant client name when importing the Luminaire API Heroku application into an org. The Agentforce metadata actions in this project are referenceing the `LuminaireService` as the client name. Thus it is important to also use this when using the import command `heroku salesforce:import api-docs.yaml --org-name my-org --client-name LuminaireService`.
+
+If you have modified the **Agent, Topics or created new Actions** within the Salesforce Setup UI run `./scripts/agentforce.sh retrieve <your-org-alias>`. This will download in metadata form the latest changes in to the `/agentforce` folder. Review the files fully before committing - delete anything that does not belong to the Luminiare agent.
+
+If you have modified the **Luminiare Solar API**, specifically operations used by Agentforce Actions, you will need to remove the Agentforce Configuration from the org using `./scripts/agentforce.sh delete <your-org-alias>` before reimporting the Heroku application per the instructions above. Once you have imported successfully then use `./scripts/agentforce.sh deploy <your-org-alias>` to reapply the Agentforce configuration.
+
+**Tip**: If you have changed or deleted an API operation, or API parameter, the `agentforce.sh deploy` will fail as actions will be using these names. In this case review the metadata files in `/genAiFunctions` and make changes to directly to them to adjust names and referneces. If you have added a new API operation, it is recommended after deploying you use the Agentforce Actions UI to create your action then retrieve the metadata as described above.
