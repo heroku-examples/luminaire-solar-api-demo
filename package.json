@@ -17,7 +17,7 @@
     "test": "node --test test/**/*.test.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "setup": "node scripts/setup.js",
+    "setup": "node data/migration.js && node data/seed.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --write .",
