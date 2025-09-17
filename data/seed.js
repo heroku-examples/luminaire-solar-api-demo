@@ -5,7 +5,7 @@ import { getLogger } from '../lib/logger.js';
 import crypto from 'node:crypto';
 
 const SYSTEM_COUNT = 3;
-const METRIC_COUNT = 24 * 30; // 24 metrics per day for 30 days
+const METRIC_COUNT = 24 * 60; // 24 metrics per day for 60 days
 
 const logger = getLogger();
 
@@ -90,9 +90,9 @@ async function seed() {
         consumed: { min: 25, max: 30 },
       },
     ];
-    // Use a fixed baseline of today at midnight (local time)
+    // Use current time (truncated to the hour) as baseline
     const baseline = new Date();
-    baseline.setHours(0, 0, 0, 0);
+    baseline.setMinutes(0, 0, 0);
     const baselineTime = baseline.getTime();
 
     // For each system, collect metric records in an array and then do a bulk insert
@@ -102,7 +102,7 @@ async function seed() {
       const ratio = energyRatios[i % energyRatios.length];
       const { produced, consumed } = ratio;
 
-      // Loop over METRIC_COUNT hours for past and future
+      // Loop over METRIC_COUNT hours for the past only
       for (let j = 0; j < METRIC_COUNT; j++) {
         // Past metric (j hours before baseline)
         let pastDate = new Date(baselineTime - j * 3600 * 1000);
@@ -111,25 +111,6 @@ async function seed() {
         records.push([
           systemIds[i],
           pastDate,
-          faker.number.float({
-            min: produced.min,
-            max: produced.max,
-            fractionDigits: 2,
-          }),
-          faker.number.float({
-            min: consumed.min,
-            max: consumed.max,
-            fractionDigits: 2,
-          }),
-        ]);
-
-        // Future metric (j hours after baseline)
-        let futureDate = new Date(baselineTime + j * 3600 * 1000);
-        futureDate.setMinutes(0, 0, 0);
-
-        records.push([
-          systemIds[i],
-          futureDate,
           faker.number.float({
             min: produced.min,
             max: produced.max,
