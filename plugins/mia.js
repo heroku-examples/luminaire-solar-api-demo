@@ -3,6 +3,57 @@ import { config } from '../config.js';
 import { randomUUID } from 'node:crypto';
 
 export default fp(async (fastify) => {
+  // In-memory cache for database schema (process lifetime)
+  let cachedDatabaseSchema = null;
+
+  /**
+   * Retrieve database schema once and cache it for subsequent calls.
+   * Returns a compact JSON string describing schemas → tables → columns.
+   */
+  const getCachedDatabaseSchema = async () => {
+    if (cachedDatabaseSchema) {
+      return cachedDatabaseSchema;
+    }
+
+    try {
+      const { rows } = await fastify.pg.query(
+        `
+        SELECT
+          c.table_schema,
+          c.table_name,
+          c.column_name,
+          c.data_type,
+          c.is_nullable,
+          c.ordinal_position
+        FROM information_schema.columns c
+        WHERE c.table_schema NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY c.table_schema, c.table_name, c.ordinal_position
+        `
+      );
+
+      const schemaObject = {};
+      for (const r of rows) {
+        const schemaName = r.table_schema;
+        const tableName = r.table_name;
+        if (!schemaObject[schemaName]) schemaObject[schemaName] = {};
+        if (!schemaObject[schemaName][tableName])
+          schemaObject[schemaName][tableName] = [];
+        schemaObject[schemaName][tableName].push({
+          name: r.column_name,
+          type: r.data_type,
+          nullable: r.is_nullable === 'YES',
+        });
+      }
+
+      cachedDatabaseSchema = JSON.stringify(schemaObject);
+      return cachedDatabaseSchema;
+    } catch (err) {
+      fastify.log.warn('Failed to introspect database schema');
+      fastify.log.error(err);
+      return null;
+    }
+  };
+
   fastify.decorate('ai', {
     /**
      * Execute a chat completion with memory
@@ -32,6 +83,8 @@ export default fp(async (fastify) => {
           await fastify.chatMemory.getFormattedMessages(sessionId);
       }
 
+      const schemaJson = await getCachedDatabaseSchema();
+
       const PROMPT = `
 # Luminaire Agent: Energy Data Specialist
 
@@ -53,6 +106,9 @@ You are Luminaire Agent, an AI assistant specialized in analyzing and presenting
 - **Web browsing**: Only use the html_to_markdown tool to answer questions about Luminaire Solar or the products they offer
 - **PDF Reading**: Only use the pdf_to_markdown tool to answer questions about EPA guidelines and other documents
 - **Measurement standard**: Use kilowatt-hours (kWh) for all energy units
+
+## Database Schema Context
+${schemaJson ? schemaJson : 'Schema context unavailable'}
 
 ## S3 Image Management
 When creating visualizations:
@@ -148,6 +204,48 @@ The response must meet the following criteria:
         });
       }
 
+      // Build tools list, omit postgres_get_schema if schema is already cached
+      const tools = [
+        ...(!schemaJson
+          ? [
+              {
+                type: 'heroku_tool',
+                name: 'postgres_get_schema',
+                runtime_params: {
+                  target_app_name: config.APP_NAME,
+                  dyno_size: config.DYNO_SIZE,
+                  tool_params: {
+                    db_attachment: config.DATABASE_ATTACHMENT,
+                  },
+                },
+              },
+            ]
+          : []),
+        {
+          type: 'heroku_tool',
+          name: 'postgres_run_query',
+          runtime_params: {
+            target_app_name: config.APP_NAME,
+            dyno_size: config.DYNO_SIZE,
+            tool_params: {
+              db_attachment: config.DATABASE_ATTACHMENT,
+            },
+          },
+        },
+        {
+          type: 'heroku_tool',
+          name: 'html_to_markdown',
+        },
+        {
+          type: 'mcp',
+          name: 'code_exec_python',
+        },
+        {
+          type: 'heroku_tool',
+          name: 'pdf_to_markdown',
+        },
+      ];
+
       // Execute the completion
       const response = await fetch(config.INFERENCE_URL + '/v1/agents/heroku', {
         method: 'POST',
@@ -159,42 +257,7 @@ The response must meet the following criteria:
         body: JSON.stringify({
           model: config.INFERENCE_MODEL_ID,
           messages,
-          tools: [
-            {
-              type: 'heroku_tool',
-              name: 'postgres_get_schema',
-              runtime_params: {
-                target_app_name: config.APP_NAME,
-                dyno_size: config.DYNO_SIZE,
-                tool_params: {
-                  db_attachment: config.DATABASE_ATTACHMENT,
-                },
-              },
-            },
-            {
-              type: 'heroku_tool',
-              name: 'postgres_run_query',
-              runtime_params: {
-                target_app_name: config.APP_NAME,
-                dyno_size: config.DYNO_SIZE,
-                tool_params: {
-                  db_attachment: config.DATABASE_ATTACHMENT,
-                },
-              },
-            },
-            {
-              type: 'heroku_tool',
-              name: 'html_to_markdown',
-            },
-            {
-              type: 'mcp',
-              name: 'code_exec_python',
-            },
-            {
-              type: 'heroku_tool',
-              name: 'pdf_to_markdown',
-            },
-          ],
+          tools,
         }),
       });
 
