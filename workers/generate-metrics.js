@@ -19,14 +19,18 @@ async function main() {
     const systems = await client.query('SELECT * FROM systems');
     // Generate metrics for the current hour
     for (const system of systems.rows) {
+      // Realistic household values: 0-5 kWh/hour produced (varies by time of day)
+      // Average residential system produces ~20-30 kWh/day
       const energyProduced = faker.number.float({
         min: 0,
-        max: 25,
+        max: 5,
         fractionDigits: 2,
       });
+      // Realistic household consumption: 0.5-3 kWh/hour
+      // Average household uses ~30-40 kWh/day
       const energyConsumed = faker.number.float({
-        min: 0,
-        max: 20,
+        min: 0.5,
+        max: 3,
         fractionDigits: 2,
       });
       const date = new Date();
