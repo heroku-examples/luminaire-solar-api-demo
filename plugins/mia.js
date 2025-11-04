@@ -1,17 +1,22 @@
 import fp from 'fastify-plugin';
 import { config } from '../config.js';
 import { randomUUID } from 'node:crypto';
+import { ToolSettingsService } from '../services/tool-settings/index.js';
 
 export default fp(async (fastify) => {
   // In-memory cache for database schema (process lifetime)
   let cachedDatabaseSchema = null;
 
+  // Initialize tool settings service
+  const toolSettingsService = new ToolSettingsService(fastify.pg);
+
   /**
    * Retrieve database schema once and cache it for subsequent calls.
    * Returns a compact JSON string describing schemas → tables → columns.
+   * @param {boolean} useCaching - Whether to use caching
    */
-  const getCachedDatabaseSchema = async () => {
-    if (cachedDatabaseSchema) {
+  const getCachedDatabaseSchema = async (useCaching = true) => {
+    if (useCaching && cachedDatabaseSchema) {
       return cachedDatabaseSchema;
     }
 
@@ -45,8 +50,11 @@ export default fp(async (fastify) => {
         });
       }
 
-      cachedDatabaseSchema = JSON.stringify(schemaObject);
-      return cachedDatabaseSchema;
+      const schemaJson = JSON.stringify(schemaObject);
+      if (useCaching) {
+        cachedDatabaseSchema = schemaJson;
+      }
+      return schemaJson;
     } catch (err) {
       fastify.log.warn('Failed to introspect database schema');
       fastify.log.error(err);
@@ -83,7 +91,48 @@ export default fp(async (fastify) => {
           await fastify.chatMemory.getFormattedMessages(sessionId);
       }
 
-      const schemaJson = await getCachedDatabaseSchema();
+      // Get user tool settings (or use defaults if userId not provided)
+      let toolSettings = null;
+      if (userId) {
+        try {
+          toolSettings = await toolSettingsService.getSettings(userId);
+          fastify.log.info(
+            { userId, settings: toolSettings },
+            'Loaded tool settings for user'
+          );
+        } catch (error) {
+          fastify.log.warn(
+            { userId },
+            'Failed to load tool settings, using defaults'
+          );
+          fastify.log.error(error);
+        }
+      } else {
+        fastify.log.warn('No userId provided, using default tool settings');
+      }
+
+      // Use default settings if not loaded
+      const settings = toolSettings || {
+        tools: {
+          postgres_query: true,
+          postgres_schema: true,
+          html_to_markdown: true,
+          pdf_to_markdown: true,
+          code_exec_python: true,
+        },
+        cache: {
+          schema_cache: true,
+        },
+        whitelists: {
+          urls: [],
+          pdfs: [],
+        },
+      };
+
+      // Get database schema with caching based on settings
+      const schemaJson = await getCachedDatabaseSchema(
+        settings.cache.schema_cache
+      );
 
       const PROMPT = `
 # Luminaire Agent: Energy Data Specialist
@@ -107,12 +156,62 @@ You are Luminaire Agent, an AI assistant specialized in analyzing and presenting
 - **PDF Reading**: Only use the pdf_to_markdown tool to answer questions about EPA guidelines and other documents
 - **Measurement standard**: Use kilowatt-hours (kWh) for all energy units
 
+## CRITICAL: Code Execution Rules
+When using Python code execution (code_exec_python):
+1. **NEVER access databases directly from Python code** - Use database tools to fetch data first, then pass data to Python
+2. **NEVER access external sources from Python** - Use html_to_markdown or pdf_to_markdown tools first, then pass data to Python
+3. **ONLY use data provided as arguments** - Python code should receive all necessary data as input parameters
+4. **Data flow must be**: Tool (fetch data) → Python (process/visualize data) → Response
+5. **Example workflow**:
+   - Step 1: Use postgres_run_query to fetch metrics
+   - Step 2: Pass query results to Python for visualization
+   - Step 3: Python generates chart from provided data
+6. **Never use** these in Python code: psycopg2, requests, urllib, database connections, HTTP clients
+7. **Allowed in Python**: Data processing, calculations, matplotlib for charts, pandas for analysis, numpy for math
+
 ## Database Schema Context
 ${schemaJson ? schemaJson : 'Schema context unavailable'}
 
+## Tool Access Configuration
+
+### Available Tools
+${
+  settings.tools.postgres_query
+    ? '✅ **Database Queries**: You can query the database using postgres_run_query'
+    : '❌ **Database Queries DISABLED**: You CANNOT access the database. Do not attempt to query for metrics or system data.'
+}
+${
+  settings.tools.postgres_schema
+    ? '✅ **Database Schema**: You can fetch schema using postgres_get_schema'
+    : '❌ **Database Schema DISABLED**: You CANNOT access database schema information.'
+}
+${
+  settings.tools.code_exec_python
+    ? '✅ **Python Code Execution**: You can execute Python code for data processing and visualization. Remember: ONLY use data passed as arguments, NEVER access databases or external sources from Python.'
+    : '❌ **Python Code Execution DISABLED**: You CANNOT execute Python code for visualizations or data processing.'
+}
+
+### Web Browsing
+${
+  settings.whitelists.urls.length > 0
+    ? `✅ **Web Browsing ENABLED** - Whitelisted URLs:\n${settings.whitelists.urls.map((u) => `   - ${u.url}${u.description ? ` (${u.description})` : ''}`).join('\n')}\n\n   You may ONLY access these whitelisted URLs. Any other URLs are forbidden.`
+    : settings.tools.html_to_markdown
+      ? '⚠️ **Web Browsing ENABLED but no URLs whitelisted**: You cannot browse any websites.'
+      : '❌ **Web Browsing DISABLED**: You CANNOT access any websites.'
+}
+
+### PDF Document Reading
+${
+  settings.whitelists.pdfs.length > 0
+    ? `✅ **PDF Reading ENABLED** - Whitelisted PDFs:\n${settings.whitelists.pdfs.map((p) => `   - ${p.pdf_url}${p.description ? ` (${p.description})` : ''}`).join('\n')}\n\n   You may ONLY access these whitelisted PDFs. Any other PDFs are forbidden.`
+    : settings.tools.pdf_to_markdown
+      ? '⚠️ **PDF Reading ENABLED but no PDFs whitelisted**: You cannot read any PDF documents.'
+      : '❌ **PDF Reading DISABLED**: You CANNOT read any PDF documents.'
+}
+
 ## S3 Image Management
-When creating visualizations:
-1. Use only the data provided, do not try to access the database from the python code.
+When creating visualizations with Python:
+1. **CRITICAL**: Data must be provided as function arguments - NEVER query databases or external sources from Python code
 2. Upload directly to S3 using credentials from environment variables:
    - STORE_ACCESS_KEY_ID, STORE_SECRET_ACCESS_KEY, STORE_REGION, STORE_URL
 3. Parse STORE_URL format (s3://bucket/key) to extract bucket and path
@@ -204,24 +303,30 @@ The response must meet the following criteria:
         });
       }
 
-      // Build tools list, omit postgres_get_schema if schema is already cached
-      const tools = [
-        ...(!schemaJson
-          ? [
-              {
-                type: 'heroku_tool',
-                name: 'postgres_get_schema',
-                runtime_params: {
-                  target_app_name: config.APP_NAME,
-                  dyno_size: config.DYNO_SIZE,
-                  tool_params: {
-                    db_attachment: config.DATABASE_ATTACHMENT,
-                  },
-                },
-              },
-            ]
-          : []),
-        {
+      // Build tools list based on enabled settings
+      const tools = [];
+
+      // Add postgres_get_schema if enabled, schema not cached, or caching is disabled
+      if (
+        settings.tools.postgres_schema &&
+        (!schemaJson || !settings.cache.schema_cache)
+      ) {
+        tools.push({
+          type: 'heroku_tool',
+          name: 'postgres_get_schema',
+          runtime_params: {
+            target_app_name: config.APP_NAME,
+            dyno_size: config.DYNO_SIZE,
+            tool_params: {
+              db_attachment: config.DATABASE_ATTACHMENT,
+            },
+          },
+        });
+      }
+
+      // Add postgres_run_query if enabled
+      if (settings.tools.postgres_query) {
+        tools.push({
           type: 'heroku_tool',
           name: 'postgres_run_query',
           runtime_params: {
@@ -231,20 +336,52 @@ The response must meet the following criteria:
               db_attachment: config.DATABASE_ATTACHMENT,
             },
           },
-        },
-        {
+        });
+      }
+
+      // Add html_to_markdown if enabled and has whitelisted URLs
+      if (
+        settings.tools.html_to_markdown &&
+        settings.whitelists.urls.length > 0
+      ) {
+        tools.push({
           type: 'heroku_tool',
           name: 'html_to_markdown',
-        },
-        {
+        });
+      }
+
+      // Add code_exec_python if enabled
+      if (settings.tools.code_exec_python) {
+        tools.push({
           type: 'mcp',
           name: 'code_exec_python',
-        },
-        {
+        });
+      }
+
+      // Add pdf_to_markdown if enabled and has whitelisted PDFs
+      if (
+        settings.tools.pdf_to_markdown &&
+        settings.whitelists.pdfs.length > 0
+      ) {
+        tools.push({
           type: 'heroku_tool',
           name: 'pdf_to_markdown',
+        });
+      }
+
+      // Log enabled tools for debugging
+      fastify.log.info(
+        {
+          toolCount: tools.length,
+          toolNames: tools.map((t) => t.name),
+          enabledSettings: settings.tools,
+          whitelistCounts: {
+            urls: settings.whitelists.urls.length,
+            pdfs: settings.whitelists.pdfs.length,
+          },
         },
-      ];
+        'Tools available for AI completion'
+      );
 
       // Execute the completion
       const response = await fetch(config.INFERENCE_URL + '/v1/agents/heroku', {

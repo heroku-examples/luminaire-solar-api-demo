@@ -17,6 +17,8 @@ import usersRoutes from './routes/users.js';
 import productsRoutes from './routes/products.js';
 import metricsRoutes from './routes/metrics.js';
 import webhooksRoutes from './routes/webhooks.js';
+import toolSettingsRoutes from './routes/tool-settings.js';
+import adminRoutes from './routes/admin.js';
 
 export async function build(opts = {}) {
   // Create Fastify instance with merged options
@@ -155,6 +157,8 @@ export async function build(opts = {}) {
   fastify.register(productsRoutes, { prefix: '/api' });
   fastify.register(metricsRoutes, { prefix: '/api' });
   fastify.register(webhooksRoutes, { prefix: '/api' });
+  fastify.register(toolSettingsRoutes, { prefix: '/api' });
+  fastify.register(adminRoutes, { prefix: '/api' });
 
   fastify.get('/', async (_request, reply) => {
     return reply.redirect('/api-docs');

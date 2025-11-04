@@ -72,11 +72,15 @@ export default async function (fastify, _opts) {
       const { question, sessionId = randomUUID(), systemId } = request.body;
       let isNewConversation = !request.body.sessionId;
 
+      // Get userId from authenticated user
+      const userId = request.user.user.id;
+
       try {
         // Get the completion stream with memory
         const stream = await fastify.ai.executeCompletion(question, {
           sessionId,
           systemId,
+          userId,
         });
 
         const jsonStream = Readable.from(stream, {

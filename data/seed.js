@@ -19,30 +19,108 @@ async function seed() {
 
   const client = await pool.connect();
   try {
-    // Cleanup existing data
+    // Cleanup existing data (preserve users to maintain sessions)
     await client.query('DELETE FROM metrics');
     await client.query('DELETE FROM users_systems');
     await client.query('DELETE FROM system_components');
     await client.query('DELETE FROM systems');
-    await client.query('DELETE FROM users');
+    await client.query('DELETE FROM whitelist_pdfs');
+    await client.query('DELETE FROM whitelist_urls');
+    await client.query('DELETE FROM tool_settings');
+    // Skip: DELETE FROM users (preserve for session continuity)
     await client.query('DELETE FROM products');
 
-    // Create a demo user. @TODO: refactor so that implementations can be unified via helpers
+    // Check if demo user already exists
     const name = 'demo';
     const last_name = 'demo';
     const email = 'demo@heroku.ca';
     const username = 'demo';
     const password = 'demo';
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = crypto
-      .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
-      .toString('hex');
 
-    const { rows } = await client.query(
-      'INSERT INTO users (name, last_name, email, username, password, salt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, last_name, email, username',
-      [name, last_name, email, username, hashedPassword, salt]
+    let userResult = await client.query(
+      'SELECT id, name, last_name, email, username FROM users WHERE username = $1',
+      [username]
     );
-    const user = rows[0];
+
+    let user;
+    if (userResult.rows.length > 0) {
+      user = userResult.rows[0];
+      logger.info(`Using existing demo user (id: ${user.id})`);
+    } else {
+      // Create new demo user
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hashedPassword = crypto
+        .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+        .toString('hex');
+
+      const { rows } = await client.query(
+        'INSERT INTO users (name, last_name, email, username, password, salt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, last_name, email, username',
+        [name, last_name, email, username, hashedPassword, salt]
+      );
+      user = rows[0];
+      logger.info(`Created new demo user (id: ${user.id})`);
+    }
+
+    // Seed tool settings for demo user with all tools enabled
+    await client.query(
+      `INSERT INTO tool_settings (
+        user_id, 
+        postgres_query_enabled, 
+        postgres_schema_enabled, 
+        html_to_markdown_enabled, 
+        pdf_to_markdown_enabled, 
+        code_exec_python_enabled, 
+        schema_cache_enabled
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [user.id, true, true, true, true, true, true]
+    );
+    logger.info('Created tool settings for demo user');
+
+    // Seed whitelisted URLs for the demo user
+    const defaultUrls = [
+      {
+        url: 'https://luminaire.ukoreh.com',
+        description: 'Official Luminaire Solar website',
+      },
+      {
+        url: 'https://luminaire.ukoreh.com/products',
+        description: 'Luminaire Solar product catalog',
+      },
+      {
+        url: 'https://luminaire.ukoreh.com/about',
+        description: 'About Luminaire Solar company',
+      },
+    ];
+
+    for (const { url, description } of defaultUrls) {
+      await client.query(
+        `INSERT INTO whitelist_urls (user_id, url, description) VALUES ($1, $2, $3)`,
+        [user.id, url, description]
+      );
+    }
+    logger.info(`Added ${defaultUrls.length} whitelisted URLs`);
+
+    // Seed whitelisted PDFs for the demo user
+    const defaultPdfs = [
+      {
+        pdf_url:
+          'https://www.epa.gov/sites/default/files/2019-08/documents/solar_cells_fact_sheet_p100il8r.pdf',
+        description: 'EPA Solar Cells Fact Sheet - Technical specifications',
+      },
+      {
+        pdf_url:
+          'https://www.epa.gov/sites/default/files/2017-09/documents/gpp-guidelines-for-making-solar-claims.pdf',
+        description: 'EPA Guidelines for Making Solar Claims - Compliance',
+      },
+    ];
+
+    for (const { pdf_url, description } of defaultPdfs) {
+      await client.query(
+        `INSERT INTO whitelist_pdfs (user_id, pdf_url, description) VALUES ($1, $2, $3)`,
+        [user.id, pdf_url, description]
+      );
+    }
+    logger.info(`Added ${defaultPdfs.length} whitelisted PDFs`);
 
     const systemIds = [];
     // Seed systems
@@ -75,19 +153,25 @@ async function seed() {
      */
     const energyRatios = [
       {
-        // max 20% leftover energy saved up
-        produced: { min: 20, max: 25 },
-        consumed: { min: 20, max: 20 },
+        // System 1: EXCELLENT - High production, low consumption
+        // Produces ~42 kWh/day, consumes ~14.4 kWh/day
+        // Worst case: 66% savings, Best case: 80% savings → ALWAYS "high" forecast → Excellent
+        produced: { min: 1.5, max: 2.0 },
+        consumed: { min: 0.4, max: 0.6 },
       },
       {
-        // min 75% leftover energy saved up
-        produced: { min: 20, max: 25 },
-        consumed: { min: 0, max: 5 },
+        // System 2: FAIR - Balanced production and consumption
+        // Produces ~42 kWh/day, consumes ~31 kWh/day
+        // Worst case: 7% savings, Best case: 40% savings → ALWAYS "medium" forecast → Fair
+        produced: { min: 1.5, max: 2.0 },
+        consumed: { min: 1.2, max: 1.4 },
       },
       {
-        // max -25% leftover energy saved up
-        produced: { min: 15, max: 20 },
-        consumed: { min: 25, max: 30 },
+        // System 3: VERY LOW - Very low production, very high consumption
+        // Produces ~12 kWh/day, consumes ~96 kWh/day
+        // Worst case: -650% savings → ALWAYS "low" forecast → Very Low
+        produced: { min: 0.3, max: 0.7 },
+        consumed: { min: 3.5, max: 4.5 },
       },
     ];
     // Use current time (truncated to the hour) as baseline
