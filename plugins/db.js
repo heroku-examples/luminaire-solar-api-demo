@@ -50,7 +50,8 @@ export default fp(async (fastify) => {
         const { rows } = await client.query(
           `SELECT systems.* FROM systems 
          JOIN users_systems ON systems.id = users_systems.system_id
-         WHERE users_systems.user_id = $1`,
+         WHERE users_systems.user_id = $1
+         ORDER BY systems.battery_storage DESC`,
           [userId]
         );
         return rows;
@@ -172,7 +173,7 @@ export default fp(async (fastify) => {
         return rows[0];
       },
       getEnergyForecast: async (systemId, date) => {
-        // deterministic (static) forecasts based on system performance, for TDX demo script purposes
+        // deterministic (static) forecasts based on system performance
         const startOfMonth = new Date(date);
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);

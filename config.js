@@ -13,6 +13,7 @@ export const config = {
   INFERENCE_KEY: process.env.INFERENCE_KEY,
   INFERENCE_MODEL_ID: process.env.INFERENCE_MODEL_ID,
   INFERENCE_URL: process.env.INFERENCE_URL,
+  MAX_CALLS: process.env.MAX_CALLS || 5,
 };
 
 // Check required config for MIA

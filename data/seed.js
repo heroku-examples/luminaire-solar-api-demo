@@ -27,6 +27,7 @@ async function seed() {
     await client.query('DELETE FROM whitelist_pdfs');
     await client.query('DELETE FROM whitelist_urls');
     await client.query('DELETE FROM tool_settings');
+    await client.query('DELETE FROM weather');
     // Skip: DELETE FROM users (preserve for session continuity)
     await client.query('DELETE FROM products');
 
@@ -123,20 +124,27 @@ async function seed() {
     logger.info(`Added ${defaultPdfs.length} whitelisted PDFs`);
 
     const systemIds = [];
+    const systems = [];
+    // Battery storage values used to identify system performance profile
+    // 100 = Excellent, 50 = Fair, 25 = Poor
+    const batteryStorageValues = [100, 50, 25];
+
     // Seed systems
     for (let i = 0; i < SYSTEM_COUNT; i++) {
+      const zip = faker.location.zipCode();
       const system = await client.query(
-        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, zip, country`,
         [
           faker.location.streetAddress(),
           faker.location.city(),
           faker.location.state(),
-          faker.location.zipCode(),
+          zip,
           'US',
-          faker.number.int({ min: 0, max: 100 }),
+          batteryStorageValues[i % batteryStorageValues.length],
         ]
       );
       systemIds.push(system.rows[0].id);
+      systems.push(system.rows[0]);
     }
 
     // Link user to systems
@@ -148,28 +156,72 @@ async function seed() {
     }
 
     /**
-     * Seed metrics.
-     * Intentionally cover different ratios of energy production:consumption for demo purposes.
+     * Seed weather data aligned with system performance profiles.
+     * System 1 (high): clear skies, high temperatures
+     * System 2 (medium): overcast, moderate temperatures
+     * System 3 (low): cloudy, lower temperatures
+     */
+    const weatherProfiles = [
+      {
+        description: 'clear skies',
+        tempRange: { min: 70, max: 85 },
+      },
+      {
+        description: 'overcast',
+        tempRange: { min: 55, max: 70 },
+      },
+      {
+        description: 'cloudy',
+        tempRange: { min: 40, max: 60 },
+      },
+    ];
+
+    for (let i = 0; i < systems.length; i++) {
+      const system = systems[i];
+      const profile = weatherProfiles[i % weatherProfiles.length];
+      const temperature = faker.number.int({
+        min: profile.tempRange.min,
+        max: profile.tempRange.max,
+      });
+
+      await client.query(
+        `INSERT INTO weather (zip, country, temperature, description) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (zip, country) DO UPDATE
+         SET (temperature, description, updated_at) = ($3, $4, now())`,
+        [system.zip, system.country, temperature, profile.description]
+      );
+    }
+    logger.info(`Seeded weather data for ${systems.length} systems`);
+
+    /**
+     * Seed metrics with deterministic performance profiles.
+     * Systems are identified by battery_storage value (100=Excellent, 50=Fair, 25=Poor)
+     * and ordered by battery_storage DESC when queried.
+     *
+     * Each system is guaranteed to fall into a specific performance category:
+     * - Excellent: >= 50% savings → "high" forecast
+     * - Fair: 1% to 49% savings → "medium" forecast
+     * - Poor: < 1% savings → "low" forecast
      */
     const energyRatios = [
       {
-        // System 1: EXCELLENT - High production, low consumption
-        // Produces ~42 kWh/day, consumes ~14.4 kWh/day
-        // Worst case: 66% savings, Best case: 80% savings → ALWAYS "high" forecast → Excellent
+        // System 1: EXCELLENT (battery_storage=100, ordered first)
+        // Produces 36-48 kWh/day, consumes 9.6-14.4 kWh/day
+        // Savings range: 60-80% → ALWAYS >= 50% → ALWAYS "high" forecast
         produced: { min: 1.5, max: 2.0 },
         consumed: { min: 0.4, max: 0.6 },
       },
       {
-        // System 2: FAIR - Balanced production and consumption
-        // Produces ~42 kWh/day, consumes ~31 kWh/day
-        // Worst case: 7% savings, Best case: 40% savings → ALWAYS "medium" forecast → Fair
+        // System 2: FAIR (battery_storage=50, ordered second)
+        // Produces 36-48 kWh/day, consumes 28.8-33.6 kWh/day
+        // Savings range: 6.7-40% → ALWAYS 1-49% → ALWAYS "medium" forecast
         produced: { min: 1.5, max: 2.0 },
         consumed: { min: 1.2, max: 1.4 },
       },
       {
-        // System 3: VERY LOW - Very low production, very high consumption
-        // Produces ~12 kWh/day, consumes ~96 kWh/day
-        // Worst case: -650% savings → ALWAYS "low" forecast → Very Low
+        // System 3: POOR (battery_storage=25, ordered third)
+        // Produces 7.2-16.8 kWh/day, consumes 84-108 kWh/day
+        // Savings range: -400% to -1400% → ALWAYS < 1% → ALWAYS "low" forecast
         produced: { min: 0.3, max: 0.7 },
         consumed: { min: 3.5, max: 4.5 },
       },

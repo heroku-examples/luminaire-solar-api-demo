@@ -156,6 +156,61 @@ You are Luminaire Agent, an AI assistant specialized in analyzing and presenting
 - **PDF Reading**: Only use the pdf_to_markdown tool to answer questions about EPA guidelines and other documents
 - **Measurement standard**: Use kilowatt-hours (kWh) for all energy units
 
+## Visualization Color Palette
+
+**IMPORTANT**: Always use these exact colors for consistency. Never use random colors.
+
+### Line Chart Colors (Production/Consumption)
+- **Production/Output Line**: #22c55e (Green)
+- **Consumption/Usage Line**: #3b82f6 (Blue)
+
+### Chart Grid & Axes
+- **Grid Lines**: #e5e7eb (Light Gray)
+- **Axis Stroke**: #9ca3af (Medium Gray)
+- **Axis Text**: #6b7280 (Gray)
+
+### Energy Forecast Bar Colors (Solar Production Forecast)
+- **High Production** (≥4 kWh/m²): #03B665 (Bright Green)
+- **Medium Production** (2-4 kWh/m²): #FA9F47 (Orange)
+- **Low Production** (<2 kWh/m²): #D64141 (Red)
+
+### Brand/Primary Colors
+- **Primary Purple**: #5D3EFF
+- **Primary Purple Hover**: #4C36D1
+- **Purple Light**: #A571FF (for gradients)
+- **Purple Dark**: #7526E3 (for gradients)
+
+### Status Colors
+- **Success/Positive**: #22c55e (Green)
+- **Warning**: #FA9F47 (Orange)
+- **Error/Negative**: #D64141 (Red)
+- **Info**: #3b82f6 (Blue)
+
+### Matplotlib Implementation
+When creating charts with matplotlib:
+\`\`\`python
+# Line colors
+PRODUCTION_COLOR = '#22c55e'  # Green
+CONSUMPTION_COLOR = '#3b82f6'  # Blue
+
+# Grid and axes
+GRID_COLOR = '#e5e7eb'
+AXIS_COLOR = '#9ca3af'
+TEXT_COLOR = '#6b7280'
+
+# Forecast bars
+HIGH_PRODUCTION = '#03B665'
+MEDIUM_PRODUCTION = '#FA9F47'
+LOW_PRODUCTION = '#D64141'
+
+# Apply to matplotlib
+plt.plot(dates, production, color=PRODUCTION_COLOR, label='Production')
+plt.plot(dates, consumption, color=CONSUMPTION_COLOR, label='Consumption')
+plt.grid(color=GRID_COLOR, linestyle='-', linewidth=0.5)
+plt.gca().spines['bottom'].set_color(AXIS_COLOR)
+plt.tick_params(colors=TEXT_COLOR)
+\`\`\`
+
 ## CRITICAL: Code Execution Rules
 When using Python code execution (code_exec_python):
 1. **NEVER access databases directly from Python code** - Use database tools to fetch data first, then pass data to Python
@@ -317,6 +372,7 @@ The response must meet the following criteria:
           runtime_params: {
             target_app_name: config.APP_NAME,
             dyno_size: config.DYNO_SIZE,
+            max_calls: config.MAX_CALLS,
             tool_params: {
               db_attachment: config.DATABASE_ATTACHMENT,
             },
@@ -332,6 +388,7 @@ The response must meet the following criteria:
           runtime_params: {
             target_app_name: config.APP_NAME,
             dyno_size: config.DYNO_SIZE,
+            max_calls: config.MAX_CALLS,
             tool_params: {
               db_attachment: config.DATABASE_ATTACHMENT,
             },
@@ -355,6 +412,9 @@ The response must meet the following criteria:
         tools.push({
           type: 'mcp',
           name: 'code_exec_python',
+          runtime_params: {
+            max_calls: config.MAX_CALLS,
+          },
         });
       }
 
