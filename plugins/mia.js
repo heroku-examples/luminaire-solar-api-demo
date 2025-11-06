@@ -318,28 +318,7 @@ When creating visualizations with Python:
 
 ## Process Transparency
 When using tools, briefly explain what you're doing without excessive detail:
-"Analyzing your January production data..." rather than "I am now executing a query to extract the January production metrics from the database..."
-
-## Special Handling for Internal Requests
-If the input contains a \`metadata\` section and the \`metadata\` section includes \`"env": "internal"\`, then respond **exclusively** with a stringified JSON object that has exactly two fields:
-- \`"efficiency"\`
-- \`"analysis"\`
-- \`"averageIrradiation"\`
-
-Forecast data representing the irradiation values for the upcoming week will be provided in the message metadata. Use this provided forecast data to compute the average irradiation (rounded to the first decimal place) and determine the correct efficiency classification along with a corresponding one-sentence analysis.
-
-The response must meet the following criteria:
-- **No additional text or formatting** should be included.
-- Based on the provided **average irradiation value** (rounded to the first decimal place):
-  - If the average irradiation is **greater than or equal to 4**, then set \`"efficiency": "Excellent"\`.
-  - If the average irradiation is **greater than or equal to 2 and less than 4**, then set \`"efficiency": "Fair"\`.
-  - If the average irradiation is **less than 2**, then set \`"efficiency": "Very Low"\`.
-- The \`"analysis"\` field should contain a one-sentence description of the impact on the system's energy savings based on:
-      - if the efficiency is very low then set the analysis to: "The system's energy savings will be significantly impacted due to low irradiation levels."
-      - if the efficiency is fair  then set the analysis to: "The system's energy savings will be moderate this week."
-      - if the efficiency is excellent then set the analysis to: "The system's energy savings will be maximized due to high irradiation levels."
-- The \`"averageIrradiation"\` field should contain the average irradiation value that you computed.
-- The system ID can be found in the \`metadata\` section, but you do not need to include it in the response.`;
+"Analyzing your January production data..." rather than "I am now executing a query to extract the January production metrics from the database..."`;
 
       // Create messages array with system prompt and previous messages
       const messages = [
@@ -465,6 +444,214 @@ The response must meet the following criteria:
       }
 
       return response.body;
+    },
+
+    /**
+     * Calculate forecast analysis directly (fallback method)
+     * @param {Array} forecastData - Array of forecast objects with irradiation values
+     * @returns {Object} - Analysis result with efficiency, analysis, and averageIrradiation
+     */
+    calculateForecastAnalysis: (forecastData) => {
+      // Calculate average irradiation
+      const total = forecastData.reduce(
+        (sum, day) => sum + (day.irradiation || 0),
+        0
+      );
+      const average = total / forecastData.length;
+      const averageIrradiation = Math.round(average * 10) / 10;
+
+      // Determine efficiency
+      let efficiency;
+      let analysis;
+
+      if (averageIrradiation >= 4) {
+        efficiency = 'Excellent';
+        analysis =
+          "The system's energy savings will be maximized due to high irradiation levels.";
+      } else if (averageIrradiation >= 2) {
+        efficiency = 'Fair';
+        analysis = "The system's energy savings will be moderate this week.";
+      } else {
+        efficiency = 'Very Low';
+        analysis =
+          "The system's energy savings will be significantly impacted due to low irradiation levels.";
+      }
+
+      return { efficiency, analysis, averageIrradiation };
+    },
+
+    /**
+     * Generate forecast analysis based on irradiation data
+     * @param {Array} forecastData - Array of forecast objects with irradiation values
+     * @param {string} systemId - The system ID (optional, for logging)
+     * @returns {Promise<Object>} - Analysis result with efficiency, analysis, and averageIrradiation
+     */
+    generateForecastAnalysis: async (forecastData, systemId = null) => {
+      const FORECAST_PROMPT = `
+# Energy Forecast Analysis Specialist
+
+You are an AI assistant specialized in analyzing solar energy forecast data and determining system efficiency.
+
+## Task
+Analyze the provided forecast data and respond **exclusively** with a valid JSON object.
+
+## CRITICAL REQUIREMENTS
+- Return ONLY valid JSON - no markdown, no text, no code blocks
+- The JSON must parse correctly with JSON.parse()
+- Do NOT wrap the JSON in backticks or code blocks
+- Do NOT add any explanatory text before or after the JSON
+
+## Required JSON Structure
+\`\`\`json
+{
+  "efficiency": "Excellent" | "Fair" | "Very Low",
+  "analysis": "string",
+  "averageIrradiation": number
+}
+\`\`\`
+
+## Instructions
+
+1. **Calculate Average Irradiation**: 
+   - Compute the average of all irradiation values from the provided forecast data
+   - Round to the first decimal place (one decimal place)
+
+2. **Determine Efficiency Classification**:
+   - If average irradiation ≥ 4 kWh/m²: \`"efficiency": "Excellent"\`
+   - If average irradiation ≥ 2 and < 4 kWh/m²: \`"efficiency": "Fair"\`
+   - If average irradiation < 2 kWh/m²: \`"efficiency": "Very Low"\`
+
+3. **Generate Analysis** (use these EXACT strings):
+   - **Very Low**: "The system's energy savings will be significantly impacted due to low irradiation levels."
+   - **Fair**: "The system's energy savings will be moderate this week."
+   - **Excellent**: "The system's energy savings will be maximized due to high irradiation levels."
+
+4. **Example Valid Response**:
+{"efficiency":"Excellent","analysis":"The system's energy savings will be maximized due to high irradiation levels.","averageIrradiation":5.2}
+
+## Forecast Data
+The forecast data will be provided in the user message as a JSON array of objects, each containing an \`irradiation\` field.`;
+
+      // Create the message with forecast data
+      const message = JSON.stringify({
+        forecastData,
+        systemId: systemId || 'not provided',
+      });
+
+      const messages = [
+        {
+          role: 'system',
+          content: FORECAST_PROMPT,
+        },
+        {
+          role: 'user',
+          content: message,
+        },
+      ];
+
+      try {
+        // Execute the completion
+        const response = await fetch(
+          config.INFERENCE_URL + '/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${config.INFERENCE_KEY}`,
+            },
+            body: JSON.stringify({
+              model: config.INFERENCE_MODEL_ID,
+              messages,
+              stream: true,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          fastify.log.error(error);
+          throw new Error('Failed to fetch forecast analysis');
+        }
+
+        // Read the streaming response (SSE format)
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            // Handle both "data:" and "data: " formats
+            if (line.startsWith('data:')) {
+              const data = line.startsWith('data: ')
+                ? line.slice(6) // Remove 'data: ' prefix
+                : line.slice(5); // Remove 'data:' prefix
+
+              if (data === '[DONE]' || data.trim() === '') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                // Extract content from streaming response
+                if (parsed.choices?.[0]?.delta?.content) {
+                  result += parsed.choices[0].delta.content;
+                }
+              } catch (_e) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+
+        // Parse the accumulated response
+        try {
+          // Try to extract JSON from the response (in case it's wrapped in markdown)
+          let jsonStr = result.trim();
+
+          // Remove markdown code blocks if present
+          if (jsonStr.startsWith('```')) {
+            jsonStr = jsonStr
+              .replace(/^```(?:json)?\n?/, '')
+              .replace(/\n?```$/, '');
+          }
+
+          const analysisData = JSON.parse(jsonStr);
+
+          // Validate the response has required fields
+          if (
+            !analysisData.efficiency ||
+            !analysisData.analysis ||
+            typeof analysisData.averageIrradiation !== 'number'
+          ) {
+            throw new Error('Response missing required fields');
+          }
+
+          return analysisData;
+        } catch (parseError) {
+          fastify.log.warn(
+            { result: result.slice(0, 500), parseError },
+            'AI returned invalid JSON, using fallback calculation'
+          );
+
+          // Fallback to direct calculation
+          return fastify.ai.calculateForecastAnalysis(forecastData);
+        }
+      } catch (error) {
+        fastify.log.error(error, 'Error generating forecast analysis');
+
+        // If all else fails, use fallback calculation
+        if (forecastData && forecastData.length > 0) {
+          fastify.log.info('Using fallback calculation for forecast analysis');
+          return fastify.ai.calculateForecastAnalysis(forecastData);
+        }
+
+        throw error;
+      }
     },
 
     /**

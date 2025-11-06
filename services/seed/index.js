@@ -161,7 +161,7 @@ export class SeedService {
   /**
    * Seed solar systems
    * @param {string} userId - The user ID
-   * @returns {Promise<Array<Object>>} Array of system objects with id, zip, country
+   * @returns {Promise<Array<Object>>} Array of system objects with id, zip, country, battery_storage
    */
   async seedSystems(userId) {
     const client = await this.db.connect();
@@ -174,15 +174,17 @@ export class SeedService {
       // Create systems
       for (let i = 0; i < SYSTEM_COUNT; i++) {
         const zip = faker.location.zipCode();
+        const batteryStorage =
+          batteryStorageValues[i % batteryStorageValues.length];
         const system = await client.query(
-          `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, zip, country`,
+          `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, zip, country, battery_storage`,
           [
             faker.location.streetAddress(),
             faker.location.city(),
             faker.location.state(),
             zip,
             'US',
-            batteryStorageValues[i % batteryStorageValues.length],
+            batteryStorage,
           ]
         );
         systems.push(system.rows[0]);
@@ -410,40 +412,61 @@ export class SeedService {
   }
 
   /**
-   * Seed system components
-   * @param {Array<Object>} systems - Array of system objects (only id property is used)
+   * Seed system components using real products
+   * Each system gets multiple Solar Panels and 1-2 additional random products
+   * Component operational status aligns with system performance profile
+   * @param {Array<Object>} systems - Array of system objects with id and battery_storage
    * @returns {Promise<void>}
    */
   async seedSystemComponents(systems) {
-    const systemIds = systems.map((s) => s.id);
     const client = await this.db.connect();
     try {
-      for (let systemId of systemIds) {
-        const mainComponent = faker.helpers.arrayElement([
-          'SolarMax PowerBox',
-          'EnerCharge Pro',
-        ]);
-        const mainActive = faker.datatype.boolean();
+      // Fetch all products with IDs
+      const { rows: allProducts } = await client.query(
+        'SELECT id, name FROM products ORDER BY name'
+      );
 
-        await client.query(
-          `INSERT INTO system_components (system_id, name, active) VALUES ($1, $2, $3)`,
-          [systemId, mainComponent, mainActive]
+      // Find Solar Panel and other products
+      const solarPanel = allProducts.find((p) => p.name === 'Solar Panel');
+      const otherProducts = allProducts.filter((p) => p.name !== 'Solar Panel');
+
+      for (const system of systems) {
+        // Determine active status based on system performance
+        // Excellent (100): 100% active, Fair (50): ~50% active, Poor (25): ~20% active
+        const activeRate = system.battery_storage / 100;
+
+        // Always add Solar Panels (2-5 panels per system)
+        const numberOfPanels = faker.number.int({ min: 2, max: 5 });
+        for (let i = 0; i < numberOfPanels; i++) {
+          // Determine if this component should be active based on system performance
+          const panelActive = Math.random() < activeRate;
+          await client.query(
+            `INSERT INTO system_components (system_id, product_id, name, active) 
+             VALUES ($1, $2, $3, $4)`,
+            [system.id, solarPanel.id, solarPanel.name, panelActive]
+          );
+        }
+
+        // Add 1-2 additional random products (power storage or accessories)
+        const numberOfAdditionalProducts = faker.number.int({ min: 1, max: 2 });
+        const selectedProducts = faker.helpers.arrayElements(
+          otherProducts,
+          numberOfAdditionalProducts
         );
 
-        if (mainComponent === 'EnerCharge Pro') {
-          const numberOfPanels = faker.number.int({ min: 2, max: 5 });
-
-          for (let i = 0; i < numberOfPanels; i++) {
-            const panelActive = faker.datatype.boolean();
-            await client.query(
-              `INSERT INTO system_components (system_id, name, active) VALUES ($1, $2, $3)`,
-              [systemId, 'Solar Panel', panelActive]
-            );
-          }
+        for (const product of selectedProducts) {
+          const productActive = Math.random() < activeRate;
+          await client.query(
+            `INSERT INTO system_components (system_id, product_id, name, active) 
+             VALUES ($1, $2, $3, $4)`,
+            [system.id, product.id, product.name, productActive]
+          );
         }
       }
 
-      this.logger.info('System components seeded');
+      this.logger.info(
+        'System components seeded with performance-aligned status'
+      );
     } finally {
       client.release();
     }

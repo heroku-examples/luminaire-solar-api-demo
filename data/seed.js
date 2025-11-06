@@ -132,15 +132,17 @@ async function seed() {
     // Seed systems
     for (let i = 0; i < SYSTEM_COUNT; i++) {
       const zip = faker.location.zipCode();
+      const batteryStorage =
+        batteryStorageValues[i % batteryStorageValues.length];
       const system = await client.query(
-        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, zip, country`,
+        `INSERT INTO systems (address, city, state, zip, country, battery_storage) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, zip, country, battery_storage`,
         [
           faker.location.streetAddress(),
           faker.location.city(),
           faker.location.state(),
           zip,
           'US',
-          batteryStorageValues[i % batteryStorageValues.length],
+          batteryStorage,
         ]
       );
       systemIds.push(system.rows[0].id);
@@ -324,42 +326,63 @@ async function seed() {
     }
 
     /**
-     * Seed system components.
+     * Seed system components using real products.
+     * Each system gets:
+     * - Multiple Solar Panels (always included)
+     * - 1-2 additional random products (power storage or accessories)
+     *
+     * Component operational status aligns with system performance:
+     * - Excellent system (battery_storage=100): All components active
+     * - Fair system (battery_storage=50): ~50% components active
+     * - Poor system (battery_storage=25): Most components inactive
      */
-    for (let systemId of systemIds) {
-      // Randomly choose the main component between 'SolarMax PowerBox' and 'EnerCharge Pro'
-      const mainComponent = faker.helpers.arrayElement([
-        'SolarMax PowerBox',
-        'EnerCharge Pro',
-      ]);
-      const mainActive = faker.datatype.boolean();
+    // Fetch all products with IDs
+    const { rows: allProducts } = await client.query(
+      'SELECT id, name FROM products ORDER BY name'
+    );
 
-      // Insert the main component
-      await client.query(
-        `
-        INSERT INTO system_components (system_id, name, active) 
-        VALUES ($1, $2, $3)
-        `,
-        [systemId, mainComponent, mainActive]
+    // Find Solar Panel and other products
+    const solarPanel = allProducts.find((p) => p.name === 'Solar Panel');
+    const otherProducts = allProducts.filter((p) => p.name !== 'Solar Panel');
+
+    for (let i = 0; i < systems.length; i++) {
+      const system = systems[i];
+      const systemId = systemIds[i];
+
+      // Determine active status based on system performance
+      // Excellent (100): 100% active, Fair (50): ~50% active, Poor (25): ~20% active
+      const activeRate = system.battery_storage / 100;
+
+      // Always add Solar Panels (2-5 panels per system)
+      const numberOfPanels = faker.number.int({ min: 2, max: 5 });
+      for (let j = 0; j < numberOfPanels; j++) {
+        // Determine if this component should be active based on system performance
+        const panelActive = Math.random() < activeRate;
+        await client.query(
+          `INSERT INTO system_components (system_id, product_id, name, active) 
+           VALUES ($1, $2, $3, $4)`,
+          [systemId, solarPanel.id, solarPanel.name, panelActive]
+        );
+      }
+
+      // Add 1-2 additional random products (power storage or accessories)
+      const numberOfAdditionalProducts = faker.number.int({ min: 1, max: 2 });
+      const selectedProducts = faker.helpers.arrayElements(
+        otherProducts,
+        numberOfAdditionalProducts
       );
 
-      // If the main component is 'EnerCharge Pro', add a few Solar Panels
-      if (mainComponent === 'EnerCharge Pro') {
-        // Choose a random number of solar panels (between 2 and 5)
-        const numberOfPanels = faker.number.int({ min: 2, max: 5 });
-
-        for (let i = 0; i < numberOfPanels; i++) {
-          const panelActive = faker.datatype.boolean();
-          await client.query(
-            `
-            INSERT INTO system_components (system_id, name, active) 
-            VALUES ($1, $2, $3)
-            `,
-            [systemId, 'Solar Panel', panelActive]
-          );
-        }
+      for (const product of selectedProducts) {
+        const productActive = Math.random() < activeRate;
+        await client.query(
+          `INSERT INTO system_components (system_id, product_id, name, active) 
+           VALUES ($1, $2, $3, $4)`,
+          [systemId, product.id, product.name, productActive]
+        );
       }
     }
+
+    logger.info('Seeded system components with performance-aligned status');
   } finally {
     client.release();
   }

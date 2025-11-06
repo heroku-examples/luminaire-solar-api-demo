@@ -334,4 +334,82 @@ export default async function (fastify, _opts) {
       reply.send(forecast);
     },
   });
+
+  fastify.post('/forecast/:systemId/analysis', {
+    schema: {
+      description:
+        'Generate AI-powered analysis of the weekly forecast for a system. Returns efficiency classification, impact analysis, and average irradiation.',
+      tags: ['metrics'],
+      params: {
+        type: 'object',
+        description: 'The system ID',
+        properties: {
+          systemId: { type: 'string' },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          date: {
+            type: 'string',
+            description: 'Date to base the forecast on (ISO format)',
+          },
+        },
+      },
+      response: {
+        200: {
+          description:
+            'Forecast analysis with efficiency and impact assessment',
+          type: 'object',
+          properties: {
+            efficiency: {
+              type: 'string',
+              enum: ['Excellent', 'Fair', 'Very Low'],
+              description:
+                'Efficiency classification based on average irradiation',
+            },
+            analysis: {
+              type: 'string',
+              description: 'One-sentence analysis of energy savings impact',
+            },
+            averageIrradiation: {
+              type: 'number',
+              description: 'Average irradiation value in kWh/m² (rounded)',
+            },
+          },
+        },
+        500: {
+          description: 'Internal Server Error',
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: async function (request, reply) {
+      try {
+        const { systemId } = request.params;
+        const date = request.query.date || new Date().toISOString();
+
+        // Get forecast data from database
+        const forecast = await fastify.db.getEnergyForecast(systemId, date);
+
+        // Generate analysis using AI
+        const analysis = await fastify.ai.generateForecastAnalysis(
+          forecast,
+          systemId
+        );
+
+        reply.send(analysis);
+      } catch (error) {
+        fastify.log.error(error, 'Failed to generate forecast analysis');
+        reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to generate forecast analysis',
+        });
+      }
+    },
+  });
 }

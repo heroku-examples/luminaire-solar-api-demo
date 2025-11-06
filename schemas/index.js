@@ -46,6 +46,7 @@ export const systemComponentSchema = {
   properties: {
     id: { type: 'string', format: 'uuid' },
     system_id: { type: 'string', format: 'uuid' },
+    product_id: { type: 'string', format: 'uuid' },
     name: { type: 'string' },
     active: { type: 'boolean' },
   },

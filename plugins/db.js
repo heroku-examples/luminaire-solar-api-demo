@@ -69,7 +69,7 @@ export default fp(async (fastify) => {
           [systemId]
         );
         const { rows: componentsRows } = await client.query(
-          `SELECT id, name, active FROM system_components WHERE system_components.system_id = $1`,
+          `SELECT id, product_id, name, active FROM system_components WHERE system_components.system_id = $1`,
           [systemId]
         );
         return {
