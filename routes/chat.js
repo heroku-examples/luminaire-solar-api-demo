@@ -8,7 +8,7 @@ import {
   clearChatHistorySchema,
   clearChatHistoryResponseSchema,
 } from '../schemas/index.js';
-import { MiaTransformStream } from '../lib/mia-utils.js';
+import { MiaSsePassThroughStream } from '../lib/mia-utils.js';
 
 export default async function (fastify, _opts) {
   fastify.addSchema({
@@ -54,12 +54,12 @@ export default async function (fastify, _opts) {
         200: {
           type: 'string',
           description:
-            "A streaming response containing newline-delimited JSON objects, each representing a chunk of the AI's response. Clients should process this stream incrementally, appending each chunk to build the complete response.",
+            "A streaming response in Server-Sent Events (SSE) format. Each event contains a complete message object with full details including tool calls, assistant responses, and session information. The stream uses 'event: message' for data events and 'event: done' for completion. Tool calls include complete function names, arguments, and IDs for client-side expansion.",
           examples: [
-            '{"role":"assistant","content":"message content"}\n{"role":"assistant","content":"next chunk"}\n',
+            'event: message\ndata: {"role":"assistant","content":"message content","sessionId":"..."}\n\nevent: message\ndata: {"role":"assistant","tool_calls":[{"id":"call_123","type":"function","function":{"name":"postgres_run_query","arguments":"{\\"query\\":\\"SELECT *\\"}"}}],"sessionId":"..."}\n\nevent: done\ndata: {}\n\n',
           ],
           content: {
-            'application/x-ndjson': {
+            'text/event-stream': {
               schema: { $ref: 'chatResponse#' },
             },
           },
@@ -87,7 +87,7 @@ export default async function (fastify, _opts) {
           objectMode: true,
         });
 
-        const summarizeStream = new MiaTransformStream(
+        const sseStream = new MiaSsePassThroughStream(
           { objectMode: true },
           fastify.chatMemory,
           sessionId,
@@ -96,28 +96,31 @@ export default async function (fastify, _opts) {
 
         jsonStream.on('error', (err) => {
           fastify.log.error({ err }, 'Error reading chat stream');
-          summarizeStream.destroy(err);
+          sseStream.destroy(err);
           return reply.raw.write(
-            JSON.stringify({
+            `event: message\ndata: ${JSON.stringify({
               role: 'error',
               content: err.message,
               sessionId,
-            })
+            })}\n\n`
           );
         });
 
-        // Set up the response
+        // Set up the SSE response
         return reply
-          .type('application/x-ndjson')
-          .send(jsonStream.pipe(summarizeStream));
+          .type('text/event-stream')
+          .header('Cache-Control', 'no-cache')
+          .header('Connection', 'keep-alive')
+          .header('X-Accel-Buffering', 'no')
+          .send(jsonStream.pipe(sseStream));
       } catch (err) {
         fastify.log.error({ err }, 'Error executing chat completion');
         reply.raw.write(
-          JSON.stringify({
+          `event: message\ndata: ${JSON.stringify({
             role: 'error',
             content: 'Error executing the chat completion, please try again',
             sessionId,
-          })
+          })}\n\n`
         );
       }
     },

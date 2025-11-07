@@ -285,21 +285,67 @@ export const chatSchema = {
 export const chatResponseSchema = {
   type: 'object',
   description:
-    "Individual message chunk from the AI assistant's streaming response. This schema defines the structure of each piece of the response as it is streamed back to the client in real-time.",
+    "Individual message event from the AI assistant's streaming response in Server-Sent Events (SSE) format. Each event contains a complete message object with full details including content, tool calls with complete function information, and session tracking. The stream delivers messages in real-time as they are generated.",
   properties: {
     role: {
       type: 'string',
-      enum: ['user', 'assistant', 'agent', 'error'],
+      enum: ['user', 'assistant', 'agent', 'tool', 'error'],
       description:
-        'Identifies the sender of the message chunk. "user" indicates content from the user, "assistant" for direct AI responses, "agent" for system-generated messages, and "error" for error notifications.',
+        'Identifies the type of message. "user" for user messages, "assistant" for AI responses (text or tool calls), "agent" for system-generated messages, "tool" for tool execution responses, and "error" for error notifications.',
     },
     content: {
       type: 'string',
       description:
-        'The actual text content of this message chunk. For streaming responses, this will be a fragment of the complete response that should be appended to previous chunks.',
+        'The text content of the message. Present for text-based messages from the assistant, agent messages, and error messages. May be absent when tool_calls is present.',
+    },
+    tool_calls: {
+      type: 'array',
+      description:
+        'Array of tool calls made by the assistant. Each tool call includes complete details: unique ID, function name, and full JSON arguments. This allows clients to display tool execution details and expand/collapse tool information in the UI.',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description:
+              'Unique identifier for this specific tool call, used to correlate with tool responses.',
+          },
+          type: {
+            type: 'string',
+            description: 'Type of tool call, typically "function".',
+          },
+          function: {
+            type: 'object',
+            description:
+              'Complete function call details including name and arguments.',
+            properties: {
+              name: {
+                type: 'string',
+                description:
+                  'Full name of the function being called (e.g., "postgres_run_query", "code_exec_python").',
+              },
+              arguments: {
+                type: 'string',
+                description:
+                  'JSON string containing the complete function arguments. Parse this to access individual parameters.',
+              },
+            },
+          },
+        },
+      },
+    },
+    tool_call_id: {
+      type: 'string',
+      description:
+        'For tool role messages, the ID of the tool call this response corresponds to.',
+    },
+    sessionId: {
+      type: 'string',
+      description:
+        'Unique session identifier that links this message to a specific conversation thread. Used for maintaining conversation context.',
     },
   },
-  required: ['role', 'content'],
+  required: ['role'],
 };
 
 export const chatHistorySchema = {
